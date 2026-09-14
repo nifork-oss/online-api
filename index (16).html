@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Онлайн — Состав и Задания</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c3aed">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Онлайн">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+.glass-modal { backdrop-filter: blur(4px); }
+</style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800">
+
+<!-- ==================== ЭКРАН ВХОДА ==================== -->
+<div id="login-view" class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-5">
+        <div class="text-center">
+            <div class="w-14 h-14 rounded-2xl bg-violet-600 text-white flex items-center justify-center mx-auto text-2xl mb-2">
+                <i class="fa-solid fa-people-roof"></i>
+            </div>
+            <h1 class="font-bold text-lg text-slate-800">Онлайн</h1>
+            <p class="text-xs text-slate-400">Состав групп и задания по теократии</p>
+        </div>
+
+        <div id="login-form" class="space-y-3">
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email</label>
+                <input type="email" id="login-email" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm" placeholder="user@example.com">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Пароль</label>
+                <input type="password" id="login-password" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm">
+            </div>
+            <p id="login-error" class="text-xs text-rose-600 hidden"></p>
+            <button onclick="handleLoginSubmit()" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-2.5 rounded-xl text-sm transition">Войти</button>
+            <button onclick="toggleAuthMode()" class="w-full text-xs text-violet-600 hover:text-violet-800 font-medium">Нет аккаунта? Зарегистрироваться</button>
+        </div>
+
+        <div id="register-form" class="space-y-3 hidden">
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email</label>
+                <input type="email" id="reg-email" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm" placeholder="user@example.com">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Пароль</label>
+                <input type="password" id="reg-password" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm" placeholder="Минимум 4 символа">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Номер группы</label>
+                <select id="reg-group" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm bg-white">
+                    <option value="" disabled selected>Выберите номер группы</option>
+                </select>
+                <p class="text-[11px] text-slate-400 mt-1">Доступ откроется после подтверждения администратором</p>
+            </div>
+            <p id="reg-error" class="text-xs text-rose-600 hidden"></p>
+            <button onclick="handleRegisterSubmit()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-sm transition">Зарегистрироваться</button>
+            <button onclick="toggleAuthMode()" class="w-full text-xs text-violet-600 hover:text-violet-800 font-medium">Уже есть аккаунт? Войти</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== ЭКРАН ОЖИДАНИЯ ПОДТВЕРЖДЕНИЯ ==================== -->
+<div id="pending-view" class="hidden min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 sm:p-8 text-center space-y-4">
+        <div class="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto text-2xl">
+            <i class="fa-solid fa-clock"></i>
+        </div>
+        <h2 class="text-lg font-bold text-slate-800">Аккаунт ожидает подтверждения</h2>
+        <p class="text-sm text-slate-500">Регистрация (<span id="pending-email" class="font-semibold text-slate-700"></span>) отправлена администратору. Как только он подтвердит доступ, попробуйте зайти ещё раз.</p>
+        <button onclick="logout()" class="text-xs text-slate-400 hover:text-slate-600 underline">Выйти</button>
+    </div>
+</div>
+
+<!-- ==================== ШАПКА ==================== -->
+<header id="app-header" class="hidden bg-violet-700 text-white sticky top-0 z-40 shadow-md">
+    <div class="max-w-5xl mx-auto px-3 py-2.5 sm:px-4 sm:py-3 flex flex-wrap justify-between items-center gap-y-2">
+        <div class="flex items-center space-x-2.5">
+            <div class="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center text-base shrink-0">
+                <i class="fa-solid fa-people-roof"></i>
+            </div>
+            <div>
+                <h1 class="text-sm sm:text-base font-bold leading-tight">Онлайн</h1>
+                <p class="text-[9px] sm:text-[10px] text-violet-200 uppercase tracking-widest">Состав и задания</p>
+            </div>
+        </div>
+        <div id="user-info" class="hidden flex-wrap items-center gap-1.5 sm:gap-3">
+            <span id="user-badge" class="px-2 py-1 bg-white/15 rounded-full text-[10px] sm:text-xs font-semibold uppercase tracking-wider"></span>
+            <button id="open-users-btn" onclick="openUsersModal()" class="hidden bg-white/15 hover:bg-white/25 text-white text-xs px-2 py-1.5 sm:px-3 rounded-lg transition font-medium">
+                <i class="fa-solid fa-users-gear sm:mr-1.5"></i><span class="hidden sm:inline">Аккаунты</span>
+            </button>
+            <button onclick="logout()" class="bg-rose-500 hover:bg-rose-600 text-white text-xs px-2 py-1.5 sm:px-3 rounded-lg transition font-medium">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- ==================== ОСНОВНОЙ ЭКРАН ==================== -->
+<main id="main-view" class="hidden max-w-5xl mx-auto p-3 sm:p-6 space-y-4">
+
+    <!-- Вкладки -->
+    <div class="flex bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <button id="tab-btn-roster" onclick="switchMainTab('roster')" class="flex-1 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition">
+            <i class="fa-solid fa-people-group mr-1"></i> Состав групп
+        </button>
+        <button id="tab-btn-assignments" onclick="switchMainTab('assignments')" class="flex-1 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition relative">
+            <i class="fa-solid fa-clipboard-list mr-1"></i> Задания
+            <span id="assignments-new-badge" class="hidden absolute top-1 right-1/4 sm:right-1/3 bg-rose-500 text-white text-[9px] font-bold rounded-full w-4 h-4 items-center justify-center"></span>
+        </button>
+    </div>
+
+    <!-- ============ ВКЛАДКА: СОСТАВ ГРУПП ============ -->
+    <div id="tab-roster">
+        <div id="roster-admin-toolbar" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-3 flex flex-wrap gap-2 items-center justify-between mb-3">
+            <span class="text-xs font-bold text-slate-600">Записей: <span id="roster-count">0</span></span>
+            <div class="flex gap-2 flex-wrap">
+                <button id="roster-undo-btn" onclick="undoRoster()" disabled class="bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-rotate-left mr-1"></i>Назад</button>
+                <button id="roster-redo-btn" onclick="redoRoster()" disabled class="bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-rotate-right mr-1"></i>Вперёд</button>
+                <button onclick="addRosterSlot()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-plus mr-1"></i>Добавить место</button>
+                <button onclick="copyWholeRoster()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-copy mr-1"></i>Копировать всё</button>
+                <button onclick="loadDemoRoster()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-flask mr-1"></i>Загрузить демо-состав</button>
+            </div>
+        </div>
+        <div id="roster-container" class="space-y-3"></div>
+    </div>
+
+    <!-- ============ ВКЛАДКА: ЗАДАНИЯ ============ -->
+    <div id="tab-assignments" class="hidden">
+        <div id="assignments-admin-toolbar" class="hidden mb-3">
+            <button onclick="openAssignmentModal()" class="bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-plus mr-1"></i>Новое задание</button>
+        </div>
+        <div id="assignments-container" class="space-y-2"></div>
+    </div>
+</main>
+
+<!-- ==================== Модалка: задание ==================== -->
+<div id="assignment-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 glass-modal p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-5 border border-slate-200">
+        <h3 class="font-bold text-sm text-slate-800 mb-3 flex items-center"><i class="fa-solid fa-clipboard-list text-violet-600 mr-2"></i><span id="assignment-modal-title">Новое задание</span></h3>
+        <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Группа</label>
+                    <select id="assign-group" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm bg-white"></select>
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Кому (необязательно)</label>
+                    <select id="assign-position" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm bg-white"></select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Название задания</label>
+                <input type="text" id="assign-title" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm" placeholder="Например: подготовить демонстрацию">
+            </div>
+            <div>
+                <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Описание</label>
+                <textarea id="assign-description" rows="3" class="w-full border border-slate-300 rounded-lg px-2.5 py-2 text-sm resize-none" placeholder="Подробности задания..."></textarea>
+            </div>
+            <div>
+                <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Дата</label>
+                <input type="date" id="assign-date" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm">
+            </div>
+        </div>
+        <div class="flex gap-2 mt-4">
+            <button onclick="closeAssignmentModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium py-2 rounded-lg transition">Отмена</button>
+            <button onclick="confirmSaveAssignment()" class="flex-1 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold py-2 rounded-lg transition">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== Модалка: Аккаунты ==================== -->
+<div id="users-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 glass-modal p-2 sm:p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col">
+        <div class="bg-violet-700 text-white p-3.5 sm:p-4 flex justify-between items-center shrink-0">
+            <h3 class="font-bold text-sm sm:text-base"><i class="fa-solid fa-users-gear mr-2"></i>Управление пользователями</h3>
+            <button onclick="closeUsersModal()" class="text-violet-200 hover:text-white text-lg p-1"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-3.5 sm:p-5 overflow-y-auto">
+            <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600 uppercase border-b border-slate-200 font-semibold text-[10px]">
+                            <th class="p-2">Email</th>
+                            <th class="p-2 text-center">Группа</th>
+                            <th class="p-2 text-center">Роль</th>
+                            <th class="p-2 text-center">Статус</th>
+                            <th class="p-2 text-center">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] space-y-2"></div>
+
+<script>
+const WORKER_URL = "https://online-api.ВАШ-АККАУНТ.workers.dev"; // <-- заменить на реальный адрес Worker'а после деплоя
+
+let authToken = localStorage.getItem('online_auth_token') || null;
+let currentUser = null;
+try { currentUser = JSON.parse(localStorage.getItem('online_user') || 'null'); } catch (e) { currentUser = null; }
+
+let groupRoster = [];
+let cloudUsers = [];
+let assignments = [];
+let activeMainTab = 'roster';
+
+const TOTAL_GROUPS = 10;
+
+/* ==================== ТОСТЫ ==================== */
+function showToast(msg, type = 'info') {
+    const colors = { success: 'bg-emerald-600', error: 'bg-rose-600', info: 'bg-slate-800' };
+    const el = document.createElement('div');
+    el.className = `${colors[type] || colors.info} text-white text-sm px-4 py-2.5 rounded-xl shadow-lg`;
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => { el.remove(); }, 3200);
+}
+
+function escapeAttr(str) {
+    return String(str ?? '').replace(/"/g, '&quot;');
+}
+
+/* ==================== АВТОРИЗАЦИЯ ==================== */
+function toggleAuthMode() {
+    document.getElementById('login-form').classList.toggle('hidden');
+    document.getElementById('register-form').classList.toggle('hidden');
+}
+
+async function handleLoginSubmit() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+    const errEl = document.getElementById('login-error');
+    errEl.classList.add('hidden');
+    if (!email || !password) { errEl.textContent = 'Заполните все поля.'; errEl.classList.remove('hidden'); return; }
+    try {
+        const res = await fetch(`${WORKER_URL}/login`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const result = await res.json();
+        if (!res.ok) { errEl.textContent = result.error || 'Ошибка входа'; errEl.classList.remove('hidden'); return; }
+        authToken = result.token;
+        currentUser = { email: result.email, role: result.role, group: result.group, approved: result.approved !== false, assignmentsLastSeenAt: result.assignmentsLastSeenAt || 0 };
+        localStorage.setItem('online_auth_token', authToken);
+        localStorage.setItem('online_user', JSON.stringify(currentUser));
+        await enterApp();
+    } catch (e) {
+        errEl.textContent = 'Ошибка сети: ' + e.message; errEl.classList.remove('hidden');
+    }
+}
+
+async function handleRegisterSubmit() {
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value.trim();
+    const group = document.getElementById('reg-group').value;
+    const errEl = document.getElementById('reg-error');
+    errEl.classList.add('hidden');
+    if (!email || !password || !group) { errEl.textContent = 'Заполните все поля, включая группу.'; errEl.classList.remove('hidden'); return; }
+    if (password.length < 4) { errEl.textContent = 'Пароль слишком короткий (минимум 4 символа).'; errEl.classList.remove('hidden'); return; }
+    try {
+        const res = await fetch(`${WORKER_URL}/register`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, group })
+        });
+        const result = await res.json();
+        if (!res.ok) { errEl.textContent = result.error || 'Ошибка регистрации'; errEl.classList.remove('hidden'); return; }
+        authToken = result.token;
+        currentUser = { email: result.email, role: result.role, group: result.group, approved: false, assignmentsLastSeenAt: 0 };
+        localStorage.setItem('online_auth_token', authToken);
+        localStorage.setItem('online_user', JSON.stringify(currentUser));
+        await enterApp();
+    } catch (e) {
+        errEl.textContent = 'Ошибка сети: ' + e.message; errEl.classList.remove('hidden');
+    }
+}
+
+function logout() {
+    authToken = null; currentUser = null;
+    localStorage.removeItem('online_auth_token');
+    localStorage.removeItem('online_user');
+    document.getElementById('app-header').classList.add('hidden');
+    document.getElementById('main-view').classList.add('hidden');
+    document.getElementById('pending-view').classList.add('hidden');
+    document.getElementById('login-view').classList.remove('hidden');
+}
+
+/* ==================== ЗАГРУЗКА/СОХРАНЕНИЕ ДАННЫХ ==================== */
+async function loadData() {
+    try {
+        const res = await fetch(`${WORKER_URL}/appdata`, { headers: { 'Authorization': 'Bearer ' + authToken } });
+        if (!res.ok) { if (res.status === 401) logout(); return false; }
+        const result = await res.json();
+        groupRoster = Array.isArray(result.data.groupRoster) ? result.data.groupRoster : [];
+        cloudUsers = Array.isArray(result.data.users) ? result.data.users : [];
+        assignments = Array.isArray(result.data.assignments) ? result.data.assignments : [];
+        return true;
+    } catch (e) {
+        showToast('Ошибка сети: ' + e.message, 'error');
+        return false;
+    }
+}
+
+async function saveData(payload) {
+    try {
+        const res = await fetch(`${WORKER_URL}/appdata`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+            body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (!res.ok) { showToast(result.error || 'Ошибка сохранения', 'error'); return false; }
+        groupRoster = Array.isArray(result.data.groupRoster) ? result.data.groupRoster : groupRoster;
+        cloudUsers = Array.isArray(result.data.users) ? result.data.users : cloudUsers;
+        assignments = Array.isArray(result.data.assignments) ? result.data.assignments : assignments;
+        if (result.assignmentsLastSeenAt !== undefined && currentUser) {
+            currentUser.assignmentsLastSeenAt = result.assignmentsLastSeenAt;
+            localStorage.setItem('online_user', JSON.stringify(currentUser));
+        }
+        return true;
+    } catch (e) {
+        showToast('Ошибка сети: ' + e.message, 'error');
+        return false;
+    }
+}
+
+/* ==================== ВХОД В ПРИЛОЖЕНИЕ ==================== */
+async function enterApp() {
+    document.getElementById('login-view').classList.add('hidden');
+    document.getElementById('pending-view').classList.add('hidden');
+
+    if (currentUser.role !== 'superadmin' && currentUser.approved === false) {
+        document.getElementById('pending-email').textContent = currentUser.email;
+        document.getElementById('pending-view').classList.remove('hidden');
+        return;
+    }
+
+    const ok = await loadData();
+    if (!ok) { logout(); return; }
+
+    document.getElementById('app-header').classList.remove('hidden');
+    document.getElementById('main-view').classList.remove('hidden');
+    document.getElementById('user-info').classList.remove('hidden');
+    document.getElementById('user-info').classList.add('flex');
+
+    const isAdmin = currentUser.role === 'admin' || currentUser.role === 'superadmin';
+    document.getElementById('user-badge').textContent = currentUser.role === 'superadmin' ? 'Главный Админ' : currentUser.role === 'admin' ? 'Администратор' : `Группа №${currentUser.group}`;
+    document.getElementById('open-users-btn').classList.toggle('hidden', currentUser.role !== 'superadmin');
+    document.getElementById('open-users-btn').classList.toggle('flex', currentUser.role === 'superadmin');
+    document.getElementById('roster-admin-toolbar').classList.toggle('hidden', !isAdmin);
+    document.getElementById('assignments-admin-toolbar').classList.toggle('hidden', !isAdmin);
+
+    populateGroupSelectors();
+    switchMainTab('roster');
+}
+
+function populateGroupSelectors() {
+    const regSel = document.getElementById('reg-group');
+    if (regSel && regSel.options.length <= 1) {
+        for (let i = 1; i <= TOTAL_GROUPS; i++) {
+            const opt = document.createElement('option');
+            opt.value = String(i); opt.textContent = `Группа №${i}`;
+            regSel.appendChild(opt);
+        }
+    }
+    const assignGroupSel = document.getElementById('assign-group');
+    assignGroupSel.innerHTML = '';
+    for (let i = 1; i <= TOTAL_GROUPS; i++) {
+        assignGroupSel.innerHTML += `<option value="${i}">Группа №${i}</option>`;
+    }
+    assignGroupSel.onchange = populateAssignPositionSelector;
+    populateAssignPositionSelector();
+}
+
+function populateAssignPositionSelector() {
+    const group = document.getElementById('assign-group').value;
+    const posSel = document.getElementById('assign-position');
+    const slots = groupRoster.filter(r => String(r.group) === String(group)).sort((a, b) => (a.position === '' ? -1 : parseInt(a.position)) - (b.position === '' ? -1 : parseInt(b.position)));
+    posSel.innerHTML = `<option value="">Вся группа</option>` + slots.map(s => `<option value="${s.position}">${s.position === '' ? 'Ответственный' : 'Место №' + s.position}</option>`).join('');
+}
+
+function switchMainTab(tab) {
+    activeMainTab = tab;
+    document.getElementById('tab-roster').classList.toggle('hidden', tab !== 'roster');
+    document.getElementById('tab-assignments').classList.toggle('hidden', tab !== 'assignments');
+    document.getElementById('tab-btn-roster').className = `flex-1 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition ${tab === 'roster' ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400'}`;
+    document.getElementById('tab-btn-assignments').className = `flex-1 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition relative ${tab === 'assignments' ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400'}`;
+    if (tab === 'roster') renderRoster();
+    if (tab === 'assignments') renderAssignments();
+}
+
+/* ==================== СОСТАВ ГРУПП ==================== */
+function isAdminRole() { return currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin'); }
+
+function renderRoster() {
+    document.getElementById('roster-count').textContent = groupRoster.length;
+    const container = document.getElementById('roster-container');
+    const editable = isAdminRole();
+    let list = groupRoster;
+    if (!editable) list = list.filter(r => String(r.group) === String(currentUser.group));
+
+    if (list.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs bg-white border border-slate-200 rounded-xl">Список пуст</div>`;
+        return;
+    }
+
+    const sections = [];
+    list.forEach((p, idx) => {
+        const realIdx = groupRoster.indexOf(p);
+        const last = sections[sections.length - 1];
+        if (last && String(last.group) === String(p.group)) last.items.push({ ...p, idx: realIdx });
+        else sections.push({ group: p.group, items: [{ ...p, idx: realIdx }] });
+    });
+
+    container.innerHTML = sections.map(sec => `
+        <div class="border border-slate-200 rounded-xl overflow-hidden bg-white">
+            <div class="flex items-center justify-between bg-violet-50 px-3 py-2">
+                <span class="font-bold text-xs text-violet-800">Группа №${escapeAttr(sec.group)} <span class="text-violet-400 font-normal">(${sec.items.length})</span></span>
+                <button onclick="copyGroupRoster('${escapeAttr(sec.group)}')" class="text-violet-600 hover:text-violet-800 text-[11px] font-semibold"><i class="fa-solid fa-copy mr-1"></i>Копировать</button>
+            </div>
+            <div class="divide-y divide-slate-100">
+                ${sec.items.map(p => `
+                    <div class="flex items-center gap-2 p-2.5 text-sm">
+                        ${editable ? `
+                        <div class="flex flex-col shrink-0">
+                            <button onclick="moveRosterSlot(${p.idx}, -1)" class="text-slate-400 hover:text-violet-600 leading-none px-1"><i class="fa-solid fa-chevron-up text-[10px]"></i></button>
+                            <button onclick="moveRosterSlot(${p.idx}, 1)" class="text-slate-400 hover:text-violet-600 leading-none px-1"><i class="fa-solid fa-chevron-down text-[10px]"></i></button>
+                        </div>` : ''}
+                        <span class="font-bold text-violet-700 ${p.position === '' ? 'bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full text-xs' : 'w-16'}">${p.position === '' ? 'Ответственный' : '№' + p.position}</span>
+                        ${editable ? `
+                        <input type="text" value="${escapeAttr(p.position)}" placeholder="пусто = ответств." onchange="setRosterPosition(${p.idx}, this.value)" class="w-24 border border-slate-300 rounded px-1.5 py-1 text-xs text-center" title="Номер места (пусто = ответственный за группу)">
+                        <input type="text" value="${escapeAttr(p.group)}" onchange="setRosterGroup(${p.idx}, this.value)" class="w-16 border border-slate-300 rounded px-1.5 py-1 text-xs text-center" title="Группа">
+                        <button onclick="removeRosterSlot(${p.idx})" class="ml-auto text-rose-500 hover:text-rose-700 p-1"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        ` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+function renumberGroup(group) {
+    let n = 0;
+    groupRoster.filter(r => String(r.group) === String(group) && r.position !== '').forEach(r => { n++; r.position = String(n); });
+}
+
+let rosterUndoStack = [], rosterRedoStack = [];
+function pushRosterUndo() {
+    rosterUndoStack.push(JSON.stringify(groupRoster));
+    if (rosterUndoStack.length > 20) rosterUndoStack.shift();
+    rosterRedoStack = [];
+    updateRosterUndoButtons();
+}
+function updateRosterUndoButtons() {
+    document.getElementById('roster-undo-btn').disabled = rosterUndoStack.length === 0;
+    document.getElementById('roster-redo-btn').disabled = rosterRedoStack.length === 0;
+}
+async function undoRoster() {
+    if (rosterUndoStack.length === 0) return;
+    rosterRedoStack.push(JSON.stringify(groupRoster));
+    groupRoster = JSON.parse(rosterUndoStack.pop());
+    updateRosterUndoButtons();
+    await saveData({ groupRoster });
+    renderRoster();
+}
+async function redoRoster() {
+    if (rosterRedoStack.length === 0) return;
+    rosterUndoStack.push(JSON.stringify(groupRoster));
+    groupRoster = JSON.parse(rosterRedoStack.pop());
+    updateRosterUndoButtons();
+    await saveData({ groupRoster });
+    renderRoster();
+}
+
+let rosterSaveTimeout = null;
+function scheduleRosterSave() {
+    if (rosterSaveTimeout) clearTimeout(rosterSaveTimeout);
+    rosterSaveTimeout = setTimeout(async () => { await saveData({ groupRoster }); }, 700);
+}
+
+function moveRosterSlot(idx, dir) {
+    const target = idx + dir;
+    if (target < 0 || target >= groupRoster.length) return;
+    if (String(groupRoster[target].group) !== String(groupRoster[idx].group)) return;
+    pushRosterUndo();
+    [groupRoster[idx], groupRoster[target]] = [groupRoster[target], groupRoster[idx]];
+    renumberGroup(groupRoster[idx].group);
+    renderRoster();
+    scheduleRosterSave();
+}
+function setRosterPosition(idx, value) {
+    pushRosterUndo();
+    groupRoster[idx].position = value.trim();
+    renderRoster();
+    scheduleRosterSave();
+}
+function setRosterGroup(idx, value) {
+    pushRosterUndo();
+    groupRoster[idx].group = value.trim();
+    renderRoster();
+    scheduleRosterSave();
+}
+function addRosterSlot() {
+    pushRosterUndo();
+    groupRoster.push({ id: 'slot_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6), group: '1', position: '' });
+    renderRoster();
+    scheduleRosterSave();
+}
+function removeRosterSlot(idx) {
+    if (!confirm('Удалить это место из состава?')) return;
+    pushRosterUndo();
+    const group = groupRoster[idx].group;
+    groupRoster.splice(idx, 1);
+    renumberGroup(group);
+    renderRoster();
+    scheduleRosterSave();
+}
+async function loadDemoRoster() {
+    if (!confirm(`Это заменит текущий состав (${groupRoster.length} записей) на демо-данные: 10 групп, в среднем по 15 человек (без имён — только группа и номер места). Продолжить?`)) return;
+    pushRosterUndo();
+    const demo = [];
+    for (let g = 1; g <= 10; g++) {
+        const size = 10 + Math.floor(Math.random() * 11); // от 10 до 20 человек в группе
+        demo.push({ id: `slot_g${g}_lead`, group: String(g), position: '' }); // ответственный
+        for (let p = 1; p < size; p++) {
+            demo.push({ id: `slot_g${g}_${p}`, group: String(g), position: String(p) });
+        }
+    }
+    groupRoster = demo;
+    renderRoster();
+    const ok = await saveData({ groupRoster });
+    if (ok) showToast(`Демо-состав загружен: ${demo.length} мест в 10 группах`, 'success');
+}
+
+async function copyGroupRoster(group) {
+    const items = groupRoster.filter(r => String(r.group) === String(group));
+    const lines = [`Группа №${group}`, ...items.map(p => p.position === '' ? 'Ответственный' : `Место №${p.position}`)];
+    try { await navigator.clipboard.writeText(lines.join('\n')); showToast('Скопировано', 'success'); }
+    catch (e) { window.prompt('Скопируйте вручную:', lines.join('\n')); }
+}
+async function copyWholeRoster() {
+    const sections = [];
+    groupRoster.forEach(p => {
+        const last = sections[sections.length - 1];
+        if (last && String(last.group) === String(p.group)) last.items.push(p);
+        else sections.push({ group: p.group, items: [p] });
+    });
+    const text = sections.map(sec => [`Группа №${sec.group}`, ...sec.items.map(p => p.position === '' ? 'Ответственный' : `Место №${p.position}`)].join('\n')).join('\n\n');
+    try { await navigator.clipboard.writeText(text); showToast('Скопировано', 'success'); }
+    catch (e) { window.prompt('Скопируйте вручную:', text); }
+}
+
+/* ==================== ЗАДАНИЯ ==================== */
+let editingAssignmentId = null;
+
+function renderAssignments() {
+    const isAdmin = isAdminRole();
+    let list = assignments;
+    if (!isAdmin) list = list.filter(a => String(a.group) === String(currentUser.group));
+    list = [...list].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+    const lastSeen = currentUser.assignmentsLastSeenAt || 0;
+    const newCount = list.filter(a => (a.updatedAt || 0) > lastSeen).length;
+    const badge = document.getElementById('assignments-new-badge');
+    if (!isAdmin && newCount > 0) { badge.textContent = newCount; badge.classList.remove('hidden'); badge.classList.add('flex'); }
+    else { badge.classList.add('hidden'); badge.classList.remove('flex'); }
+
+    const container = document.getElementById('assignments-container');
+    if (list.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs bg-white border border-slate-200 rounded-xl">Заданий пока нет</div>`;
+    } else {
+        container.innerHTML = list.map(a => {
+            const isNew = (a.updatedAt || 0) > lastSeen;
+            return `
+            <div class="bg-white border ${isNew && !isAdmin ? 'border-amber-400 ring-2 ring-amber-200' : 'border-slate-200'} rounded-xl p-3 relative">
+                ${isNew && !isAdmin ? `<span class="absolute -top-2 -right-2 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow">ИЗМЕНЕНО</span>` : ''}
+                <div class="flex justify-between items-start gap-2">
+                    <div>
+                        <div class="text-xs font-bold text-violet-700">Группа №${escapeAttr(a.group)}${a.position ? ` · Место №${escapeAttr(a.position)}` : ' · Вся группа'}</div>
+                        <div class="font-bold text-sm text-slate-800 mt-0.5">${escapeAttr(a.title)}</div>
+                    </div>
+                    ${a.date ? `<span class="text-[11px] text-slate-400 shrink-0">${escapeAttr(a.date)}</span>` : ''}
+                </div>
+                ${a.description ? `<p class="text-xs text-slate-600 mt-1.5 whitespace-pre-wrap">${escapeAttr(a.description)}</p>` : ''}
+                ${isAdmin ? `
+                <div class="flex gap-2 mt-2 pt-2 border-t border-slate-100">
+                    <button onclick="openAssignmentModal('${a.id}')" class="text-[11px] text-violet-600 font-semibold"><i class="fa-solid fa-pen mr-1"></i>Изменить</button>
+                    <button onclick="deleteAssignment('${a.id}')" class="text-[11px] text-rose-600 font-semibold"><i class="fa-solid fa-trash-can mr-1"></i>Удалить</button>
+                </div>` : ''}
+            </div>
+        `; }).join('');
+    }
+
+    if (!isAdmin && newCount > 0) {
+        setTimeout(() => { saveData({ markAssignmentsSeen: true }); }, 1200);
+    }
+}
+
+function openAssignmentModal(id) {
+    populateGroupSelectors();
+    editingAssignmentId = id || null;
+    document.getElementById('assignment-modal-title').textContent = id ? 'Изменить задание' : 'Новое задание';
+    if (id) {
+        const a = assignments.find(x => x.id === id);
+        if (a) {
+            document.getElementById('assign-group').value = a.group;
+            populateAssignPositionSelector();
+            document.getElementById('assign-position').value = a.position || '';
+            document.getElementById('assign-title').value = a.title || '';
+            document.getElementById('assign-description').value = a.description || '';
+            document.getElementById('assign-date').value = a.date || '';
+        }
+    } else {
+        document.getElementById('assign-title').value = '';
+        document.getElementById('assign-description').value = '';
+        document.getElementById('assign-date').value = '';
+    }
+    document.getElementById('assignment-modal').classList.remove('hidden');
+}
+function closeAssignmentModal() {
+    document.getElementById('assignment-modal').classList.add('hidden');
+    editingAssignmentId = null;
+}
+async function confirmSaveAssignment() {
+    const title = document.getElementById('assign-title').value.trim();
+    if (!title) { alert('Укажите название задания.'); return; }
+    const group = document.getElementById('assign-group').value;
+    const position = document.getElementById('assign-position').value;
+    const description = document.getElementById('assign-description').value.trim();
+    const date = document.getElementById('assign-date').value;
+
+    if (editingAssignmentId) {
+        const a = assignments.find(x => x.id === editingAssignmentId);
+        if (a) { a.group = group; a.position = position; a.title = title; a.description = description; a.date = date; }
+    } else {
+        assignments.push({ id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6), group, position, title, description, date });
+    }
+    closeAssignmentModal();
+    const ok = await saveData({ assignments });
+    if (ok) { showToast('Задание сохранено', 'success'); renderAssignments(); }
+}
+async function deleteAssignment(id) {
+    if (!confirm('Удалить это задание?')) return;
+    assignments = assignments.filter(a => a.id !== id);
+    const ok = await saveData({ assignments });
+    if (ok) { showToast('Задание удалено', 'success'); renderAssignments(); }
+}
+
+/* ==================== АККАУНТЫ (супер-админ) ==================== */
+function openUsersModal() { renderUsersTable(); document.getElementById('users-modal').classList.remove('hidden'); }
+function closeUsersModal() { document.getElementById('users-modal').classList.add('hidden'); }
+
+function renderUsersTable() {
+    const tbody = document.getElementById('users-tbody');
+    if (cloudUsers.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-400">Пока никто не зарегистрирован</td></tr>`; return; }
+    tbody.innerHTML = cloudUsers.map((u, idx) => `
+        <tr class="border-b border-slate-100">
+            <td class="p-2 font-semibold text-slate-800">${escapeAttr(u.email)}</td>
+            <td class="p-2 text-center">
+                <select onchange="updateUserField(${idx}, 'group', this.value)" class="border border-slate-300 rounded px-1 py-0.5 text-xs">
+                    ${Array.from({length: TOTAL_GROUPS}, (_, i) => i + 1).map(n => `<option value="${n}" ${String(u.group) === String(n) ? 'selected' : ''}>№${n}</option>`).join('')}
+                </select>
+            </td>
+            <td class="p-2 text-center">
+                <select onchange="updateUserField(${idx}, 'role', this.value)" class="border border-slate-300 rounded px-1 py-0.5 text-xs">
+                    <option value="user" ${u.role === 'user' ? 'selected' : ''}>Пользователь</option>
+                    <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Администратор</option>
+                    <option value="superadmin" ${u.role === 'superadmin' ? 'selected' : ''}>Главный Админ</option>
+                </select>
+            </td>
+            <td class="p-2 text-center">
+                ${u.approved
+                    ? `<button onclick="toggleApproval(${idx})" class="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">✅ Одобрен</button>`
+                    : `<button onclick="toggleApproval(${idx})" class="text-[10px] font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700 animate-pulse">⏳ Одобрить</button>`}
+            </td>
+            <td class="p-2 text-center">
+                ${u.email !== currentUser.email ? `<button onclick="deleteUserAcc(${idx})" class="text-rose-600 p-1"><i class="fa-solid fa-user-xmark"></i></button>` : '<span class="text-slate-400 text-[10px]">(Вы)</span>'}
+            </td>
+        </tr>
+    `).join('');
+}
+async function updateUserField(idx, field, value) { cloudUsers[idx][field] = value; await saveData({ users: cloudUsers }); renderUsersTable(); }
+async function toggleApproval(idx) { cloudUsers[idx].approved = !cloudUsers[idx].approved; await saveData({ users: cloudUsers }); renderUsersTable(); showToast('Обновлено', 'success'); }
+async function deleteUserAcc(idx) { if (!confirm('Удалить этот аккаунт?')) return; cloudUsers.splice(idx, 1); await saveData({ users: cloudUsers }); renderUsersTable(); showToast('Удалено', 'success'); }
+
+/* ==================== ЗАПУСК ==================== */
+document.addEventListener('DOMContentLoaded', async () => {
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+    }
+    if (authToken && currentUser) {
+        await enterApp();
+    } else {
+        document.getElementById('login-view').classList.remove('hidden');
+        populateGroupSelectors();
+    }
+});
+</script>
+</body>
+</html>
