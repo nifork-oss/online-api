@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Онлайн — Состав и Задания</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c3aed">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Онлайн">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+.glass-modal { backdrop-filter: blur(4px); }
+</style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800">
+
+<!-- ==================== ЭКРАН ВХОДА ==================== -->
+<div id="login-view" class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-5">
+        <div class="text-center">
+            <div class="w-14 h-14 rounded-2xl bg-violet-600 text-white flex items-center justify-center mx-auto text-2xl mb-2">
+                <i class="fa-solid fa-people-roof"></i>
+            </div>
+            <h1 class="font-bold text-lg text-slate-800">Онлайн</h1>
+            <p class="text-xs text-slate-400">Состав групп и задания по теократии</p>
+        </div>
+
+        <div id="login-form" class="space-y-3">
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email</label>
+                <input type="email" id="login-email" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm" placeholder="user@example.com">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Пароль</label>
+                <input type="password" id="login-password" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm">
+            </div>
+            <p id="login-error" class="text-xs text-rose-600 hidden"></p>
+            <button onclick="handleLoginSubmit()" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-2.5 rounded-xl text-sm transition">Войти</button>
+            <button onclick="toggleAuthMode()" class="w-full text-xs text-violet-600 hover:text-violet-800 font-medium">Нет аккаунта? Зарегистрироваться</button>
+        </div>
+
+        <div id="register-form" class="space-y-3 hidden">
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email</label>
+                <input type="email" id="reg-email" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm" placeholder="user@example.com">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Пароль</label>
+                <input type="password" id="reg-password" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm" placeholder="Минимум 4 символа">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Номер группы</label>
+                <select id="reg-group" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm bg-white">
+                    <option value="" disabled selected>Выберите номер группы</option>
+                </select>
+                <p class="text-[11px] text-slate-400 mt-1">Доступ откроется после подтверждения администратором</p>
+            </div>
+            <p id="reg-error" class="text-xs text-rose-600 hidden"></p>
+            <button onclick="handleRegisterSubmit()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-sm transition">Зарегистрироваться</button>
+            <button onclick="toggleAuthMode()" class="w-full text-xs text-violet-600 hover:text-violet-800 font-medium">Уже есть аккаунт? Войти</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== ЭКРАН ОЖИДАНИЯ ПОДТВЕРЖДЕНИЯ ==================== -->
+<div id="pending-view" class="hidden min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 sm:p-8 text-center space-y-4">
+        <div class="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto text-2xl">
+            <i class="fa-solid fa-clock"></i>
+        </div>
+        <h2 class="text-lg font-bold text-slate-800">Аккаунт ожидает подтверждения</h2>
+        <p class="text-sm text-slate-500">Регистрация (<span id="pending-email" class="font-semibold text-slate-700"></span>) отправлена администратору. Как только он подтвердит доступ, попробуйте зайти ещё раз.</p>
+        <button onclick="logout()" class="text-xs text-slate-400 hover:text-slate-600 underline">Выйти</button>
+    </div>
+</div>
+
+<!-- ==================== Модалка выбора режима ==================== -->
+<div id="role-choice-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 glass-modal p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center space-y-4">
+        <h3 class="font-bold text-base text-slate-800">Как войти?</h3>
+        <p class="text-xs text-slate-500">У вас есть права администратора — выберите, в каком режиме открыть сайт на этот раз.</p>
+        <div class="space-y-2.5">
+            <button onclick="chooseViewMode('admin')" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-2.5 rounded-xl text-sm transition"><i class="fa-solid fa-user-shield mr-2"></i>Как Администратор</button>
+            <button onclick="chooseViewMode('user')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-sm transition"><i class="fa-solid fa-people-group mr-2"></i>Как Ответственный за группу</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== ШАПКА ==================== -->
+<header id="app-header" class="hidden bg-violet-700 text-white sticky top-0 z-40 shadow-md">
+    <div class="max-w-5xl mx-auto px-3 py-2.5 sm:px-4 sm:py-3 flex flex-wrap justify-between items-center gap-y-2">
+        <div class="flex items-center space-x-2.5">
+            <div class="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center text-base shrink-0">
+                <i class="fa-solid fa-people-roof"></i>
+            </div>
+            <div>
+                <h1 class="text-sm sm:text-base font-bold leading-tight">Онлайн</h1>
+                <p class="text-[9px] sm:text-[10px] text-violet-200 uppercase tracking-widest">Состав и задания</p>
+            </div>
+        </div>
+        <div id="user-info" class="hidden flex-wrap items-center gap-1.5 sm:gap-3">
+            <span id="user-badge" class="px-2 py-1 bg-white/15 rounded-full text-[10px] sm:text-xs font-semibold uppercase tracking-wider"></span>
+            <button id="switch-view-btn" onclick="openRoleChoiceModal()" class="hidden bg-white/15 hover:bg-white/25 text-white text-xs px-2 py-1.5 sm:px-3 rounded-lg transition font-medium" title="Сменить режим отображения">
+                <i class="fa-solid fa-shuffle sm:mr-1.5"></i><span class="hidden sm:inline">Режим</span>
+            </button>
+            <button id="open-roster-btn" onclick="openRosterModal()" class="hidden bg-white/15 hover:bg-white/25 text-white text-xs px-2 py-1.5 sm:px-3 rounded-lg transition font-medium">
+                <i class="fa-solid fa-people-group sm:mr-1.5"></i><span class="hidden sm:inline">Состав</span>
+            </button>
+            <button id="open-users-btn" onclick="openUsersModal()" class="hidden bg-white/15 hover:bg-white/25 text-white text-xs px-2 py-1.5 sm:px-3 rounded-lg transition font-medium">
+                <i class="fa-solid fa-users-gear sm:mr-1.5"></i><span class="hidden sm:inline">Аккаунты</span>
+            </button>
+            <button onclick="logout()" class="bg-rose-500 hover:bg-rose-600 text-white text-xs px-2 py-1.5 sm:px-3 rounded-lg transition font-medium">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- ==================== ОСНОВНОЙ ЭКРАН (РАСПИСАНИЕ) ==================== -->
+<main id="main-view" class="hidden max-w-5xl mx-auto p-3 sm:p-6 space-y-4">
+
+    <!-- ============ РАСПИСАНИЕ ВСТРЕЧ ============ -->
+    <div id="tab-assignments" class="space-y-3">
+        <div class="flex bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden overflow-x-auto">
+            <button id="sched-tab-btn-midweek" onclick="switchScheduleTab('midweek')" class="flex-1 py-2 px-2 text-[11px] sm:text-xs font-bold border-b-2 transition whitespace-nowrap">📅 Будни</button>
+            <button id="sched-tab-btn-study" onclick="switchScheduleTab('study')" class="flex-1 py-2 px-2 text-[11px] sm:text-xs font-bold border-b-2 transition whitespace-nowrap">🎓 Учебные</button>
+            <button id="sched-tab-btn-weekend" onclick="switchScheduleTab('weekend')" class="flex-1 py-2 px-2 text-[11px] sm:text-xs font-bold border-b-2 transition whitespace-nowrap">📖 Выходные</button>
+            <button id="sched-tab-btn-vps" onclick="switchScheduleTab('vps')" class="flex-1 py-2 px-2 text-[11px] sm:text-xs font-bold border-b-2 transition whitespace-nowrap">🚪 ВПС</button>
+        </div>
+
+        <div id="sched-panel-midweek">
+            <div id="midweek-admin-toolbar" class="hidden mb-3 space-y-2">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex bg-slate-100 rounded-xl p-1 w-fit">
+                        <button id="midweek-source-live-btn" onclick="switchMidweekSource('live')" class="px-3 py-1.5 text-xs font-bold rounded-lg transition">Основной</button>
+                        <button id="midweek-source-draft-btn" onclick="switchMidweekSource('draft')" class="px-3 py-1.5 text-xs font-bold rounded-lg transition">Черновик</button>
+                    </div>
+                    <div class="flex gap-2 flex-wrap">
+                        <button onclick="addMidweekWeek()" class="bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-plus mr-1"></i>Добавить среду</button>
+                        <button onclick="openTrashModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash-can mr-1"></i>Корзина</button>
+                    </div>
+                </div>
+                <div id="midweek-draft-actions" class="hidden flex gap-2 flex-wrap bg-amber-50 border border-amber-200 rounded-xl p-2">
+                    <button onclick="pullMidweekFromLive()" class="bg-white hover:bg-amber-100 text-amber-700 text-xs font-semibold px-3 py-1.5 rounded-lg transition border border-amber-300"><i class="fa-solid fa-download mr-1"></i>Подтянуть из основного</button>
+                    <button onclick="publishMidweekDraft()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-upload mr-1"></i>Опубликовать в основной</button>
+                </div>
+            </div>
+            <div id="midweek-container" class="space-y-3"></div>
+        </div>
+
+        <div id="sched-panel-study" class="hidden">
+            <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+                <div class="flex bg-slate-100 rounded-xl p-1 w-fit">
+                    <button id="study-class-btn-main" onclick="switchStudyClass('mainClass')" class="px-3 py-1.5 text-xs font-bold rounded-lg transition">Основной класс</button>
+                    <button id="study-class-btn-second" onclick="switchStudyClass('secondClass')" class="px-3 py-1.5 text-xs font-bold rounded-lg transition">Второй класс</button>
+                </div>
+                <span id="study-source-badge" class="text-[11px] font-semibold text-slate-400"></span>
+            </div>
+            <div id="study-students-toolbar" class="hidden flex gap-2 flex-wrap mb-3">
+                <button onclick="openRosterModalInMarkMode()" class="bg-white hover:bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-lg transition border border-slate-200"><i class="fa-solid fa-graduation-cap mr-1"></i>Отметить учащихся</button>
+                <button onclick="openStudentRegistryModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-list-check mr-1"></i>Учёт учащихся</button>
+            </div>
+            <div id="study-container" class="space-y-3"></div>
+        </div>
+
+        <div id="sched-panel-weekend" class="hidden">
+            <div id="weekend-admin-toolbar" class="hidden mb-3 space-y-2">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex bg-slate-100 rounded-xl p-1 w-fit">
+                        <button id="weekend-source-live-btn" onclick="switchWeekendSource('live')" class="px-3 py-1.5 text-xs font-bold rounded-lg transition">Основной</button>
+                        <button id="weekend-source-draft-btn" onclick="switchWeekendSource('draft')" class="px-3 py-1.5 text-xs font-bold rounded-lg transition">Черновик</button>
+                    </div>
+                    <div class="flex gap-2 flex-wrap">
+                        <button onclick="addWeekendWeek()" class="bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-plus mr-1"></i>Добавить субботу</button>
+                        <button onclick="openTrashModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash-can mr-1"></i>Корзина</button>
+                    </div>
+                </div>
+                <div id="weekend-draft-actions" class="hidden flex gap-2 flex-wrap bg-amber-50 border border-amber-200 rounded-xl p-2">
+                    <button onclick="pullWeekendFromLive()" class="bg-white hover:bg-amber-100 text-amber-700 text-xs font-semibold px-3 py-1.5 rounded-lg transition border border-amber-300"><i class="fa-solid fa-download mr-1"></i>Подтянуть из основного</button>
+                    <button onclick="publishWeekendDraft()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-upload mr-1"></i>Опубликовать в основной</button>
+                </div>
+            </div>
+            <div id="weekend-container" class="space-y-3"></div>
+        </div>
+
+        <div id="sched-panel-vps" class="hidden">
+            <div id="vps-admin-toolbar" class="hidden mb-3 space-y-2">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex bg-slate-100 rounded-xl p-1 w-fit">
+                        <button id="vps-source-live-btn" onclick="switchVpsSource('live')" class="px-3 py-1.5 text-xs font-bold rounded-lg transition">Основной</button>
+                        <button id="vps-source-draft-btn" onclick="switchVpsSource('draft')" class="px-3 py-1.5 text-xs font-bold rounded-lg transition">Черновик</button>
+                    </div>
+                    <div class="flex gap-2 flex-wrap">
+                        <button onclick="addVpsWeek()" class="bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-plus mr-1"></i>Добавить воскресенье</button>
+                        <button onclick="openTrashModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash-can mr-1"></i>Корзина</button>
+                    </div>
+                </div>
+                <div id="vps-draft-actions" class="hidden flex gap-2 flex-wrap bg-amber-50 border border-amber-200 rounded-xl p-2">
+                    <button onclick="pullVpsFromLive()" class="bg-white hover:bg-amber-100 text-amber-700 text-xs font-semibold px-3 py-1.5 rounded-lg transition border border-amber-300"><i class="fa-solid fa-download mr-1"></i>Подтянуть из основного</button>
+                    <button onclick="publishVpsDraft()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-upload mr-1"></i>Опубликовать в основной</button>
+                </div>
+            </div>
+            <div id="vps-container" class="space-y-2"></div>
+        </div>
+    </div>
+</main>
+
+<!-- ==================== Модалка: Состав групп ==================== -->
+<!-- ==================== Модалка: Корзина ==================== -->
+<!-- ==================== Модалка: Учёт учащихся ==================== -->
+<div id="student-registry-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 glass-modal p-2 sm:p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col">
+        <div class="bg-indigo-700 text-white p-3.5 sm:p-4 flex justify-between items-center shrink-0">
+            <h3 class="font-bold text-sm sm:text-base"><i class="fa-solid fa-list-check mr-2"></i>Учёт учащихся школы</h3>
+            <button onclick="closeStudentRegistryModal()" class="text-indigo-200 hover:text-white text-lg p-1"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-3.5 sm:p-5 overflow-y-auto">
+            <p class="text-[11px] text-slate-400 mb-3">Отсортировано от самого давнего задания к самому недавнему — вверху те, кому задание нужно назначить в первую очередь.</p>
+            <div id="student-registry-list" class="space-y-1.5"></div>
+        </div>
+    </div>
+</div>
+
+<div id="trash-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 glass-modal p-2 sm:p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col">
+        <div class="bg-slate-700 text-white p-3.5 sm:p-4 flex justify-between items-center shrink-0">
+            <h3 class="font-bold text-sm sm:text-base"><i class="fa-solid fa-trash-can mr-2"></i>Корзина</h3>
+            <button onclick="closeTrashModal()" class="text-slate-300 hover:text-white text-lg p-1"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-3.5 sm:p-5 overflow-y-auto space-y-4">
+            <div>
+                <h4 class="font-bold text-xs text-slate-600 mb-2">📅 Будни</h4>
+                <div id="trash-midweek-list" class="space-y-1.5"></div>
+            </div>
+            <div>
+                <h4 class="font-bold text-xs text-slate-600 mb-2">📖 Выходные</h4>
+                <div id="trash-weekend-list" class="space-y-1.5"></div>
+            </div>
+            <div>
+                <h4 class="font-bold text-xs text-slate-600 mb-2">🚪 ВПС</h4>
+                <div id="trash-vps-list" class="space-y-1.5"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="roster-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 glass-modal p-2 sm:p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col">
+        <div class="bg-violet-700 text-white p-3.5 sm:p-4 flex justify-between items-center shrink-0">
+            <h3 class="font-bold text-sm sm:text-base"><i class="fa-solid fa-people-group mr-2"></i>Состав групп</h3>
+            <button onclick="closeRosterModal()" class="text-violet-200 hover:text-white text-lg p-1"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-3.5 sm:p-5 overflow-y-auto">
+            <div id="roster-mark-mode-banner" class="hidden bg-indigo-50 border border-indigo-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 mb-3">
+                <span class="text-xs font-bold text-indigo-700"><i class="fa-solid fa-graduation-cap mr-1.5"></i>Режим отметки учащихся</span>
+                <div class="flex gap-2">
+                    <button onclick="markAllRosterAsStudents()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">Отметить всех</button>
+                    <button onclick="toggleMarkStudentsMode()" class="bg-white hover:bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-lg transition border border-slate-200">Готово</button>
+                </div>
+            </div>
+            <div id="roster-admin-toolbar" class="hidden bg-slate-50 rounded-xl border border-slate-200 p-3 flex flex-wrap gap-2 items-center justify-between mb-3">
+                <span class="text-xs font-bold text-slate-600">Записей: <span id="roster-count">0</span></span>
+                <div class="flex gap-2 flex-wrap">
+                    <button id="roster-undo-btn" onclick="undoRoster()" disabled class="bg-white hover:bg-slate-100 disabled:opacity-40 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-lg transition border border-slate-200"><i class="fa-solid fa-rotate-left mr-1"></i>Назад</button>
+                    <button id="roster-redo-btn" onclick="redoRoster()" disabled class="bg-white hover:bg-slate-100 disabled:opacity-40 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-lg transition border border-slate-200"><i class="fa-solid fa-rotate-right mr-1"></i>Вперёд</button>
+                    <button onclick="addRosterSlot()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-plus mr-1"></i>Добавить место</button>
+                    <button onclick="copyWholeRoster()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-copy mr-1"></i>Копировать всё</button>
+                    <button onclick="loadDemoRoster()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-flask mr-1"></i>Загрузить демо-состав</button>
+                </div>
+            </div>
+            <div id="roster-container" class="space-y-3"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== Модалка: Аккаунты ==================== -->
+<div id="users-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 glass-modal p-2 sm:p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col">
+        <div class="bg-violet-700 text-white p-3.5 sm:p-4 flex justify-between items-center shrink-0">
+            <h3 class="font-bold text-sm sm:text-base"><i class="fa-solid fa-users-gear mr-2"></i>Управление пользователями</h3>
+            <button onclick="closeUsersModal()" class="text-violet-200 hover:text-white text-lg p-1"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-3.5 sm:p-5 overflow-y-auto">
+            <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600 uppercase border-b border-slate-200 font-semibold text-[10px]">
+                            <th class="p-2">Email</th>
+                            <th class="p-2 text-center">Группа</th>
+                            <th class="p-2 text-center">Роль</th>
+                            <th class="p-2 text-center">Статус</th>
+                            <th class="p-2 text-center">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] space-y-2"></div>
+
+<script>
+const WORKER_URL = "https://online-api.nifork.workers.dev";
+
+let authToken = localStorage.getItem('online_auth_token') || null;
+let currentUser = null;
+try { currentUser = JSON.parse(localStorage.getItem('online_user') || 'null'); } catch (e) { currentUser = null; }
+
+let groupRoster = [];
+let cloudUsers = [];
+// "Активные" переменные ниже — то, что использует вся остальная логика
+// отрисовки/редактирования без изменений. При переключении
+// Основной/Черновик они просто указывают на другое хранилище.
+let midweekSchedule = {};
+let studySchedule = {};
+let weekendSchedule = {};
+let vpsSchedule = {};
+let midweekLive = {}, midweekDraftStore = {};
+let studyLive = {}, studyDraftStore = {};
+let weekendLive = {}, weekendDraftStore = {};
+let vpsLive = {}, vpsDraftStore = {};
+let activeMidweekSource = 'live'; // управляет одновременно "Будни" и "Учебные"
+let activeWeekendSource = 'live';
+let activeVpsSource = 'live';
+let midweekTrash = {};
+let studyTrash = {};
+let weekendTrash = {};
+let vpsTrash = {};
+let activeMainTab = 'roster';
+let activeScheduleTab = 'midweek';
+let activeStudyClass = 'mainClass';
+let viewMode = null;
+let openRosterGroups = new Set();
+let openScheduleWeeks = new Set();
+let rosterMarkStudentsMode = false;
+
+const TOTAL_GROUPS = 10;
+
+/* ==================== ТОСТЫ ==================== */
+function showToast(msg, type = 'info') {
+    const colors = { success: 'bg-emerald-600', error: 'bg-rose-600', info: 'bg-slate-800' };
+    const el = document.createElement('div');
+    el.className = `${colors[type] || colors.info} text-white text-sm px-4 py-2.5 rounded-xl shadow-lg`;
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => { el.remove(); }, 3200);
+}
+
+function escapeAttr(str) {
+    return String(str ?? '').replace(/"/g, '&quot;');
+}
+
+/* ==================== АВТОРИЗАЦИЯ ==================== */
+function toggleAuthMode() {
+    document.getElementById('login-form').classList.toggle('hidden');
+    document.getElementById('register-form').classList.toggle('hidden');
+}
+
+async function handleLoginSubmit() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+    const errEl = document.getElementById('login-error');
+    errEl.classList.add('hidden');
+    if (!email || !password) { errEl.textContent = 'Заполните все поля.'; errEl.classList.remove('hidden'); return; }
+    try {
+        const res = await fetch(`${WORKER_URL}/login`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const result = await res.json();
+        if (!res.ok) { errEl.textContent = result.error || 'Ошибка входа'; errEl.classList.remove('hidden'); return; }
+        authToken = result.token;
+        currentUser = { email: result.email, role: result.role, group: result.group, approved: result.approved !== false, assignmentsLastSeenAt: result.assignmentsLastSeenAt || 0 };
+        localStorage.setItem('online_auth_token', authToken);
+        localStorage.setItem('online_user', JSON.stringify(currentUser));
+        await enterApp();
+    } catch (e) {
+        errEl.textContent = 'Ошибка сети: ' + e.message; errEl.classList.remove('hidden');
+    }
+}
+
+async function handleRegisterSubmit() {
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value.trim();
+    const group = document.getElementById('reg-group').value;
+    const errEl = document.getElementById('reg-error');
+    errEl.classList.add('hidden');
+    if (!email || !password || !group) { errEl.textContent = 'Заполните все поля, включая группу.'; errEl.classList.remove('hidden'); return; }
+    if (password.length < 4) { errEl.textContent = 'Пароль слишком короткий (минимум 4 символа).'; errEl.classList.remove('hidden'); return; }
+    try {
+        const res = await fetch(`${WORKER_URL}/register`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, group })
+        });
+        const result = await res.json();
+        if (!res.ok) { errEl.textContent = result.error || 'Ошибка регистрации'; errEl.classList.remove('hidden'); return; }
+        authToken = result.token;
+        currentUser = { email: result.email, role: result.role, group: result.group, approved: false, assignmentsLastSeenAt: 0 };
+        localStorage.setItem('online_auth_token', authToken);
+        localStorage.setItem('online_user', JSON.stringify(currentUser));
+        await enterApp();
+    } catch (e) {
+        errEl.textContent = 'Ошибка сети: ' + e.message; errEl.classList.remove('hidden');
+    }
+}
+
+function logout() {
+    authToken = null; currentUser = null;
+    localStorage.removeItem('online_auth_token');
+    localStorage.removeItem('online_user');
+    document.getElementById('app-header').classList.add('hidden');
+    document.getElementById('main-view').classList.add('hidden');
+    document.getElementById('pending-view').classList.add('hidden');
+    document.getElementById('login-view').classList.remove('hidden');
+}
+
+/* ==================== ЗАГРУЗКА/СОХРАНЕНИЕ ДАННЫХ ==================== */
+async function loadData() {
+    try {
+        const res = await fetch(`${WORKER_URL}/appdata`, { headers: { 'Authorization': 'Bearer ' + authToken } });
+        if (!res.ok) { if (res.status === 401) logout(); return false; }
+        const result = await res.json();
+        groupRoster = Array.isArray(result.data.groupRoster) ? result.data.groupRoster : [];
+        cloudUsers = Array.isArray(result.data.users) ? result.data.users : [];
+        midweekLive = (result.data.midweekSchedule && typeof result.data.midweekSchedule === 'object') ? result.data.midweekSchedule : {};
+        studyLive = (result.data.studySchedule && typeof result.data.studySchedule === 'object') ? result.data.studySchedule : {};
+        weekendLive = (result.data.weekendSchedule && typeof result.data.weekendSchedule === 'object') ? result.data.weekendSchedule : {};
+        vpsLive = (result.data.vpsSchedule && typeof result.data.vpsSchedule === 'object') ? result.data.vpsSchedule : {};
+        midweekDraftStore = (result.data.midweekDraft && typeof result.data.midweekDraft === 'object') ? result.data.midweekDraft : {};
+        studyDraftStore = (result.data.studyDraft && typeof result.data.studyDraft === 'object') ? result.data.studyDraft : {};
+        weekendDraftStore = (result.data.weekendDraft && typeof result.data.weekendDraft === 'object') ? result.data.weekendDraft : {};
+        vpsDraftStore = (result.data.vpsDraft && typeof result.data.vpsDraft === 'object') ? result.data.vpsDraft : {};
+        midweekTrash = (result.data.midweekTrash && typeof result.data.midweekTrash === 'object') ? result.data.midweekTrash : {};
+        studyTrash = (result.data.studyTrash && typeof result.data.studyTrash === 'object') ? result.data.studyTrash : {};
+        weekendTrash = (result.data.weekendTrash && typeof result.data.weekendTrash === 'object') ? result.data.weekendTrash : {};
+        vpsTrash = (result.data.vpsTrash && typeof result.data.vpsTrash === 'object') ? result.data.vpsTrash : {};
+        refreshActivePointers();
+        return true;
+    } catch (e) {
+        showToast('Ошибка сети: ' + e.message, 'error');
+        return false;
+    }
+}
+
+function refreshActivePointers() {
+    midweekSchedule = activeMidweekSource === 'live' ? midweekLive : midweekDraftStore;
+    studySchedule = activeMidweekSource === 'live' ? studyLive : studyDraftStore;
+    weekendSchedule = activeWeekendSource === 'live' ? weekendLive : weekendDraftStore;
+    vpsSchedule = activeVpsSource === 'live' ? vpsLive : vpsDraftStore;
+}
+
+/* ==================== ЧЕРНОВИКИ: переключение + импорт/экспорт ==================== */
+function switchMidweekSource(source) {
+    activeMidweekSource = source;
+    refreshActivePointers();
+    updateSourceToggleUI('midweek', source);
+    renderMidweek();
+}
+function switchWeekendSource(source) {
+    activeWeekendSource = source;
+    refreshActivePointers();
+    updateSourceToggleUI('weekend', source);
+    renderWeekend();
+}
+function switchVpsSource(source) {
+    activeVpsSource = source;
+    refreshActivePointers();
+    updateSourceToggleUI('vps', source);
+    renderVps();
+}
+
+function updateSourceToggleUI(table, source) {
+    const liveBtn = document.getElementById(`${table}-source-live-btn`);
+    const draftBtn = document.getElementById(`${table}-source-draft-btn`);
+    if (liveBtn) liveBtn.className = `px-3 py-1.5 text-xs font-bold rounded-lg transition ${source === 'live' ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500'}`;
+    if (draftBtn) draftBtn.className = `px-3 py-1.5 text-xs font-bold rounded-lg transition ${source === 'draft' ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-500'}`;
+    const importExportBar = document.getElementById(`${table}-draft-actions`);
+    if (importExportBar) importExportBar.classList.toggle('hidden', source !== 'draft');
+}
+
+async function publishMidweekDraft() {
+    if (!confirm('Опубликовать черновик «Будни»/«Учебные» в основную таблицу? Текущие основные данные по всем датам черновика будут заменены.')) return;
+    midweekLive = JSON.parse(JSON.stringify(midweekDraftStore));
+    studyLive = JSON.parse(JSON.stringify(studyDraftStore));
+    const ok = await saveData({ midweekSchedule: midweekLive, studySchedule: studyLive });
+    if (ok) { showToast('Черновик опубликован в основную таблицу', 'success'); refreshActivePointers(); renderMidweek(); }
+}
+async function pullMidweekFromLive() {
+    if (!confirm('Подтянуть основную таблицу «Будни»/«Учебные» в черновик? Текущий черновик будет заменён.')) return;
+    midweekDraftStore = JSON.parse(JSON.stringify(midweekLive));
+    studyDraftStore = JSON.parse(JSON.stringify(studyLive));
+    const ok = await saveData({ midweekDraft: midweekDraftStore, studyDraft: studyDraftStore });
+    if (ok) { showToast('Основная таблица подтянута в черновик', 'success'); refreshActivePointers(); renderMidweek(); }
+}
+
+async function publishWeekendDraft() {
+    if (!confirm('Опубликовать черновик «Выходные» в основную таблицу? Текущие основные данные по датам черновика будут заменены.')) return;
+    weekendLive = JSON.parse(JSON.stringify(weekendDraftStore));
+    const ok = await saveData({ weekendSchedule: weekendLive });
+    if (ok) { showToast('Черновик опубликован в основную таблицу', 'success'); refreshActivePointers(); renderWeekend(); }
+}
+async function pullWeekendFromLive() {
+    if (!confirm('Подтянуть основную таблицу «Выходные» в черновик? Текущий черновик будет заменён.')) return;
+    weekendDraftStore = JSON.parse(JSON.stringify(weekendLive));
+    const ok = await saveData({ weekendDraft: weekendDraftStore });
+    if (ok) { showToast('Основная таблица подтянута в черновик', 'success'); refreshActivePointers(); renderWeekend(); }
+}
+
+async function publishVpsDraft() {
+    if (!confirm('Опубликовать черновик «ВПС» в основную таблицу? Текущие основные данные по датам черновика будут заменены.')) return;
+    vpsLive = JSON.parse(JSON.stringify(vpsDraftStore));
+    const ok = await saveData({ vpsSchedule: vpsLive });
+    if (ok) { showToast('Черновик опубликован в основную таблицу', 'success'); refreshActivePointers(); renderVps(); }
+}
+async function pullVpsFromLive() {
+    if (!confirm('Подтянуть основную таблицу «ВПС» в черновик? Текущий черновик будет заменён.')) return;
+    vpsDraftStore = JSON.parse(JSON.stringify(vpsLive));
+    const ok = await saveData({ vpsDraft: vpsDraftStore });
+    if (ok) { showToast('Основная таблица подтянута в черновик', 'success'); refreshActivePointers(); renderVps(); }
+}
+
+async function saveData(payload, isRetry) {
+    try {
+        const res = await fetch(`${WORKER_URL}/appdata`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+            body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (!res.ok) {
+            // При временном превышении лимита запросов (429) — один раз тихо
+            // повторяем сами, не дёргая пользователя по пустякам.
+            const isRateLimit = result.error && result.error.includes('429');
+            if (isRateLimit && !isRetry) {
+                await new Promise((resolve) => setTimeout(resolve, 2500));
+                return saveData(payload, true);
+            }
+            showToast(result.error || 'Ошибка сохранения', 'error');
+            return false;
+        }
+        groupRoster = Array.isArray(result.data.groupRoster) ? result.data.groupRoster : groupRoster;
+        cloudUsers = Array.isArray(result.data.users) ? result.data.users : cloudUsers;
+        midweekLive = (result.data.midweekSchedule && typeof result.data.midweekSchedule === 'object') ? result.data.midweekSchedule : midweekLive;
+        studyLive = (result.data.studySchedule && typeof result.data.studySchedule === 'object') ? result.data.studySchedule : studyLive;
+        weekendLive = (result.data.weekendSchedule && typeof result.data.weekendSchedule === 'object') ? result.data.weekendSchedule : weekendLive;
+        vpsLive = (result.data.vpsSchedule && typeof result.data.vpsSchedule === 'object') ? result.data.vpsSchedule : vpsLive;
+        midweekDraftStore = (result.data.midweekDraft && typeof result.data.midweekDraft === 'object') ? result.data.midweekDraft : midweekDraftStore;
+        studyDraftStore = (result.data.studyDraft && typeof result.data.studyDraft === 'object') ? result.data.studyDraft : studyDraftStore;
+        weekendDraftStore = (result.data.weekendDraft && typeof result.data.weekendDraft === 'object') ? result.data.weekendDraft : weekendDraftStore;
+        vpsDraftStore = (result.data.vpsDraft && typeof result.data.vpsDraft === 'object') ? result.data.vpsDraft : vpsDraftStore;
+        midweekTrash = (result.data.midweekTrash && typeof result.data.midweekTrash === 'object') ? result.data.midweekTrash : midweekTrash;
+        studyTrash = (result.data.studyTrash && typeof result.data.studyTrash === 'object') ? result.data.studyTrash : studyTrash;
+        weekendTrash = (result.data.weekendTrash && typeof result.data.weekendTrash === 'object') ? result.data.weekendTrash : weekendTrash;
+        vpsTrash = (result.data.vpsTrash && typeof result.data.vpsTrash === 'object') ? result.data.vpsTrash : vpsTrash;
+        refreshActivePointers();
+        return true;
+    } catch (e) {
+        showToast('Ошибка сети: ' + e.message, 'error');
+        return false;
+    }
+}
+
+/* ==================== ВХОД В ПРИЛОЖЕНИЕ ==================== */
+async function enterApp() {
+    document.getElementById('login-view').classList.add('hidden');
+    document.getElementById('pending-view').classList.add('hidden');
+
+    if (currentUser.role !== 'superadmin' && currentUser.approved === false) {
+        document.getElementById('pending-email').textContent = currentUser.email;
+        document.getElementById('pending-view').classList.remove('hidden');
+        return;
+    }
+
+    const ok = await loadData();
+    if (!ok) { logout(); return; }
+
+    const isAdminAccount = currentUser.role === 'admin' || currentUser.role === 'superadmin';
+    if (isAdminAccount && !viewMode) {
+        document.getElementById('role-choice-modal').classList.remove('hidden');
+        return;
+    }
+
+    document.getElementById('role-choice-modal').classList.add('hidden');
+    document.getElementById('app-header').classList.remove('hidden');
+    document.getElementById('main-view').classList.remove('hidden');
+    document.getElementById('user-info').classList.remove('hidden');
+    document.getElementById('user-info').classList.add('flex');
+
+    // Отображаем интерфейс по ВЫБРАННОМУ режиму, а не только по реальной
+    // роли в аккаунте — так админ может проверить, что видит обычный
+    // ответственный за группу, не заводя отдельный аккаунт.
+    const showAdminUI = isAdminAccount && viewMode === 'admin';
+    document.getElementById('user-badge').textContent = !isAdminAccount ? `Группа №${currentUser.group}`
+        : (viewMode === 'admin' ? (currentUser.role === 'superadmin' ? 'Главный Админ' : 'Администратор') : `Гр. №${currentUser.group} (админ)`);
+    document.getElementById('switch-view-btn').classList.toggle('hidden', !isAdminAccount);
+    document.getElementById('switch-view-btn').classList.toggle('flex', isAdminAccount);
+    document.getElementById('open-roster-btn').classList.remove('hidden');
+    document.getElementById('open-roster-btn').classList.add('flex');
+    document.getElementById('open-users-btn').classList.toggle('hidden', currentUser.role !== 'superadmin' || viewMode !== 'admin');
+    document.getElementById('open-users-btn').classList.toggle('flex', currentUser.role === 'superadmin' && viewMode === 'admin');
+    document.getElementById('roster-admin-toolbar').classList.toggle('hidden', !showAdminUI);
+    document.getElementById('midweek-admin-toolbar').classList.toggle('hidden', !showAdminUI);
+    document.getElementById('weekend-admin-toolbar').classList.toggle('hidden', !showAdminUI);
+    document.getElementById('vps-admin-toolbar').classList.toggle('hidden', !showAdminUI);
+    document.getElementById('study-students-toolbar').classList.toggle('hidden', !showAdminUI);
+
+    populateGroupSelectors();
+    switchScheduleTab(activeScheduleTab);
+}
+
+function chooseViewMode(mode) {
+    viewMode = mode;
+    document.getElementById('role-choice-modal').classList.add('hidden');
+    enterApp();
+}
+
+function openRoleChoiceModal() {
+    viewMode = null;
+    document.getElementById('role-choice-modal').classList.remove('hidden');
+}
+
+function populateGroupSelectors() {
+    const regSel = document.getElementById('reg-group');
+    if (regSel && regSel.options.length <= 1) {
+        for (let i = 1; i <= TOTAL_GROUPS; i++) {
+            const opt = document.createElement('option');
+            opt.value = String(i); opt.textContent = `Группа №${i}`;
+            regSel.appendChild(opt);
+        }
+    }
+}
+
+function openTrashModal() {
+    document.getElementById('trash-modal').classList.remove('hidden');
+    renderTrashModal();
+}
+function closeTrashModal() {
+    document.getElementById('trash-modal').classList.add('hidden');
+}
+function renderTrashModal() {
+    function trashRow(dateKey, restoreFn, deleteFn) {
+        return `
+        <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+            <span class="text-xs font-semibold text-slate-700">${formatDateRu(dateKey)}</span>
+            <div class="flex gap-2">
+                <button onclick="${restoreFn}('${dateKey}')" class="text-emerald-600 hover:text-emerald-800 text-[11px] font-semibold"><i class="fa-solid fa-rotate-left mr-1"></i>Восстановить</button>
+                <button onclick="${deleteFn}('${dateKey}')" class="text-rose-500 hover:text-rose-700 text-[11px] font-semibold"><i class="fa-solid fa-trash-can mr-1"></i>Удалить навсегда</button>
+            </div>
+        </div>`;
+    }
+    const emptyMsg = `<div class="text-[11px] text-slate-400 italic">Пусто</div>`;
+
+    const mwKeys = sortedDateKeys(midweekTrash);
+    document.getElementById('trash-midweek-list').innerHTML = mwKeys.length
+        ? mwKeys.map(k => trashRow(k, 'restoreMidweekWeek', 'permanentlyDeleteMidweekWeek')).join('') : emptyMsg;
+
+    const wKeys = sortedDateKeys(weekendTrash);
+    document.getElementById('trash-weekend-list').innerHTML = wKeys.length
+        ? wKeys.map(k => trashRow(k, 'restoreWeekendWeek', 'permanentlyDeleteWeekendWeek')).join('') : emptyMsg;
+
+    const vKeys = sortedDateKeys(vpsTrash);
+    document.getElementById('trash-vps-list').innerHTML = vKeys.length
+        ? vKeys.map(k => trashRow(k, 'restoreVpsWeek', 'permanentlyDeleteVpsWeek')).join('') : emptyMsg;
+}
+
+function openRosterModal() {
+    document.getElementById('roster-modal').classList.remove('hidden');
+    renderRoster();
+}
+function openRosterModalInMarkMode() {
+    document.getElementById('roster-modal').classList.remove('hidden');
+    if (!rosterMarkStudentsMode) toggleMarkStudentsMode();
+    else renderRoster();
+}
+function closeRosterModal() {
+    document.getElementById('roster-modal').classList.add('hidden');
+}
+
+function switchScheduleTab(tab) {
+    activeScheduleTab = tab;
+    ['midweek', 'study', 'weekend', 'vps'].forEach(t => {
+        document.getElementById(`sched-panel-${t}`).classList.toggle('hidden', t !== tab);
+        document.getElementById(`sched-tab-btn-${t}`).className = `flex-1 py-2 px-2 text-[11px] sm:text-xs font-bold border-b-2 transition whitespace-nowrap ${t === tab ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400'}`;
+    });
+    updateSourceToggleUI('midweek', activeMidweekSource);
+    updateSourceToggleUI('weekend', activeWeekendSource);
+    updateSourceToggleUI('vps', activeVpsSource);
+    if (tab === 'midweek') renderMidweek();
+    if (tab === 'study') switchStudyClass(activeStudyClass);
+    if (tab === 'weekend') renderWeekend();
+    if (tab === 'vps') renderVps();
+}
+
+function switchStudyClass(cls) {
+    activeStudyClass = cls;
+    document.getElementById('study-class-btn-main').className = `px-3 py-1.5 text-xs font-bold rounded-lg transition ${cls === 'mainClass' ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500'}`;
+    document.getElementById('study-class-btn-second').className = `px-3 py-1.5 text-xs font-bold rounded-lg transition ${cls === 'secondClass' ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500'}`;
+    renderStudy();
+}
+
+/* ==================== СОСТАВ ГРУПП ==================== */
+function isAdminRole() {
+    const isAdminAccount = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
+    return isAdminAccount && viewMode === 'admin';
+}
+
+function renderRoster() {
+    document.getElementById('roster-count').textContent = groupRoster.length;
+    const container = document.getElementById('roster-container');
+    const editable = isAdminRole();
+    let list = groupRoster;
+    if (!editable) list = list.filter(r => String(r.group) === String(currentUser.group));
+
+    if (list.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs bg-white border border-slate-200 rounded-xl">Список пуст</div>`;
+        return;
+    }
+
+    const sections = [];
+    list.forEach((p, idx) => {
+        const realIdx = groupRoster.indexOf(p);
+        const last = sections[sections.length - 1];
+        if (last && String(last.group) === String(p.group)) last.items.push({ ...p, idx: realIdx });
+        else sections.push({ group: p.group, items: [{ ...p, idx: realIdx }] });
+    });
+
+    container.innerHTML = sections.map(sec => {
+        const isOpen = openRosterGroups.has(String(sec.group));
+        return `
+        <div class="border border-slate-200 rounded-xl overflow-hidden bg-white">
+            <button onclick="toggleRosterGroup('${escapeAttr(sec.group)}')" class="w-full flex items-center justify-between bg-violet-50 px-3 py-2 text-left">
+                <span class="font-bold text-xs text-violet-800 flex items-center gap-1.5">
+                    <i class="fa-solid fa-chevron-${isOpen ? 'down' : 'right'} text-[10px] text-violet-400"></i>
+                    Группа №${escapeAttr(sec.group)} <span class="text-violet-400 font-normal">(${sec.items.length})</span>
+                </span>
+                <span onclick="event.stopPropagation(); copyGroupRoster('${escapeAttr(sec.group)}')" class="text-violet-600 hover:text-violet-800 text-[11px] font-semibold"><i class="fa-solid fa-copy mr-1"></i>Копировать</span>
+            </button>
+            ${isOpen ? `
+            <div class="divide-y divide-slate-100">
+                ${sec.items.map(p => `
+                    <div class="flex items-center gap-2 p-2.5 text-sm">
+                        ${editable ? `
+                        <div class="flex flex-col shrink-0">
+                            <button onclick="moveRosterSlot(${p.idx}, -1)" class="text-slate-400 hover:text-violet-600 leading-none px-1"><i class="fa-solid fa-chevron-up text-[10px]"></i></button>
+                            <button onclick="moveRosterSlot(${p.idx}, 1)" class="text-slate-400 hover:text-violet-600 leading-none px-1"><i class="fa-solid fa-chevron-down text-[10px]"></i></button>
+                        </div>` : ''}
+                        <span class="font-bold text-violet-700 ${p.position === '' ? 'bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full text-xs' : 'w-16'}">${p.position === '' ? 'Ответственный' : '№' + p.position}</span>
+                        ${rosterMarkStudentsMode ? `
+                        <label class="flex items-center gap-1 text-[11px] text-indigo-700 font-semibold ml-1">
+                            <input type="checkbox" ${p.isStudent ? 'checked' : ''} onchange="toggleRosterStudent(${p.idx}, this.checked)">
+                            🎓 Учащийся
+                        </label>` : ''}
+                        ${editable && !rosterMarkStudentsMode ? `
+                        <input type="text" value="${escapeAttr(p.position)}" placeholder="пусто = ответств." onchange="setRosterPosition(${p.idx}, this.value)" class="w-24 border border-slate-300 rounded px-1.5 py-1 text-xs text-center" title="Номер места (пусто = ответственный за группу)">
+                        <input type="text" value="${escapeAttr(p.group)}" onchange="setRosterGroup(${p.idx}, this.value)" class="w-16 border border-slate-300 rounded px-1.5 py-1 text-xs text-center" title="Группа">
+                        <button onclick="removeRosterSlot(${p.idx})" class="ml-auto text-rose-500 hover:text-rose-700 p-1"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        ` : ''}
+                    </div>
+                `).join('')}
+            </div>` : ''}
+        </div>
+    `; }).join('');
+}
+
+function toggleRosterGroup(group) {
+    const key = String(group);
+    if (openRosterGroups.has(key)) openRosterGroups.delete(key);
+    else openRosterGroups.add(key);
+    renderRoster();
+}
+
+function toggleMarkStudentsMode() {
+    rosterMarkStudentsMode = !rosterMarkStudentsMode;
+    document.getElementById('roster-mark-mode-banner').classList.toggle('hidden', !rosterMarkStudentsMode);
+    // В режиме отметки удобнее сразу видеть все группы, а не разворачивать вручную.
+    if (rosterMarkStudentsMode) {
+        groupRoster.forEach(r => openRosterGroups.add(String(r.group)));
+    }
+    renderRoster();
+}
+
+function markAllRosterAsStudents() {
+    const editable = isAdminRole();
+    let list = groupRoster;
+    if (!editable) list = list.filter(r => String(r.group) === String(currentUser.group));
+    if (!confirm(`Отметить всех (${list.length}) учащимися?`)) return;
+    list.forEach(r => { r.isStudent = true; });
+    renderRoster();
+    scheduleRosterSave();
+}
+
+function toggleRosterStudent(idx, checked) {
+    groupRoster[idx].isStudent = checked;
+    scheduleRosterSave();
+}
+
+function computeStudentRegistry() {
+    const key = (g, p) => String(g) + '.' + String(p ?? '');
+    const map = {};
+
+    groupRoster.forEach(r => {
+        if (r.isStudent) map[key(r.group, r.position)] = { group: r.group, position: r.position, lastDate: null };
+    });
+
+    Object.keys(studySchedule).forEach(dateKey => {
+        ['mainClass', 'secondClass'].forEach(cls => {
+            const clsData = studySchedule[dateKey][cls];
+            if (!clsData || !clsData.items) return;
+            clsData.items.forEach(item => {
+                [item.participant, item.partner].forEach(person => {
+                    if (person && person.group) {
+                        const k = key(person.group, person.position);
+                        if (!map[k]) map[k] = { group: person.group, position: person.position, lastDate: null };
+                        if (!map[k].lastDate || dateKey > map[k].lastDate) map[k].lastDate = dateKey;
+                    }
+                });
+            });
+        });
+    });
+
+    return Object.values(map).sort((a, b) => {
+        if (!a.lastDate && !b.lastDate) return 0;
+        if (!a.lastDate) return -1;
+        if (!b.lastDate) return 1;
+        return a.lastDate.localeCompare(b.lastDate);
+    });
+}
+
+function openStudentRegistryModal() {
+    document.getElementById('student-registry-modal').classList.remove('hidden');
+    renderStudentRegistry();
+}
+function closeStudentRegistryModal() {
+    document.getElementById('student-registry-modal').classList.add('hidden');
+}
+function renderStudentRegistry() {
+    const list = computeStudentRegistry();
+    const container = document.getElementById('student-registry-list');
+    if (list.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs bg-slate-50 border border-slate-200 rounded-xl">Список пуст — отметьте учащихся в составе групп, либо они появятся здесь сами после первого учебного задания.</div>`;
+        return;
+    }
+    container.innerHTML = list.map(s => `
+        <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+            <span class="text-xs font-semibold text-slate-700">Гр.${escapeAttr(s.group)}${s.position !== '' && s.position !== undefined ? '.' + escapeAttr(s.position) : ''} ${s.position === '' ? '<span class="text-[10px] text-amber-700 font-normal">(Ответственный)</span>' : ''}</span>
+            <span class="text-[11px] ${s.lastDate ? 'text-slate-500' : 'text-rose-500 font-semibold'}">${s.lastDate ? formatDateRu(s.lastDate) : 'Заданий ещё не было'}</span>
+        </div>
+    `).join('');
+}
+
+function renumberGroup(group) {
+    let n = 0;
+    groupRoster.filter(r => String(r.group) === String(group) && r.position !== '').forEach(r => { n++; r.position = String(n); });
+}
+
+let rosterUndoStack = [], rosterRedoStack = [];
+function pushRosterUndo() {
+    rosterUndoStack.push(JSON.stringify(groupRoster));
+    if (rosterUndoStack.length > 20) rosterUndoStack.shift();
+    rosterRedoStack = [];
+    updateRosterUndoButtons();
+}
+function updateRosterUndoButtons() {
+    document.getElementById('roster-undo-btn').disabled = rosterUndoStack.length === 0;
+    document.getElementById('roster-redo-btn').disabled = rosterRedoStack.length === 0;
+}
+async function undoRoster() {
+    if (rosterUndoStack.length === 0) return;
+    rosterRedoStack.push(JSON.stringify(groupRoster));
+    groupRoster = JSON.parse(rosterUndoStack.pop());
+    updateRosterUndoButtons();
+    await saveData({ groupRoster });
+    renderRoster();
+}
+async function redoRoster() {
+    if (rosterRedoStack.length === 0) return;
+    rosterUndoStack.push(JSON.stringify(groupRoster));
+    groupRoster = JSON.parse(rosterRedoStack.pop());
+    updateRosterUndoButtons();
+    await saveData({ groupRoster });
+    renderRoster();
+}
+
+let rosterSaveTimeout = null;
+function scheduleRosterSave() {
+    if (rosterSaveTimeout) clearTimeout(rosterSaveTimeout);
+    rosterSaveTimeout = setTimeout(async () => { await saveData({ groupRoster }); }, 1500);
+}
+
+function moveRosterSlot(idx, dir) {
+    const target = idx + dir;
+    if (target < 0 || target >= groupRoster.length) return;
+    if (String(groupRoster[target].group) !== String(groupRoster[idx].group)) return;
+    pushRosterUndo();
+    [groupRoster[idx], groupRoster[target]] = [groupRoster[target], groupRoster[idx]];
+    renumberGroup(groupRoster[idx].group);
+    renderRoster();
+    scheduleRosterSave();
+}
+function setRosterPosition(idx, value) {
+    pushRosterUndo();
+    groupRoster[idx].position = value.trim();
+    renderRoster();
+    scheduleRosterSave();
+}
+function setRosterGroup(idx, value) {
+    pushRosterUndo();
+    groupRoster[idx].group = value.trim();
+    renderRoster();
+    scheduleRosterSave();
+}
+function addRosterSlot() {
+    pushRosterUndo();
+    groupRoster.push({ id: 'slot_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6), group: '1', position: '' });
+    renderRoster();
+    scheduleRosterSave();
+}
+function removeRosterSlot(idx) {
+    if (!confirm('Удалить это место из состава?')) return;
+    pushRosterUndo();
+    const group = groupRoster[idx].group;
+    groupRoster.splice(idx, 1);
+    renumberGroup(group);
+    renderRoster();
+    scheduleRosterSave();
+}
+async function loadDemoRoster() {
+    if (!confirm(`Это заменит текущий состав (${groupRoster.length} записей) на демо-данные: 10 групп, в среднем по 15 человек (без имён — только группа и номер места). Продолжить?`)) return;
+    pushRosterUndo();
+    const demo = [];
+    for (let g = 1; g <= 10; g++) {
+        const size = 10 + Math.floor(Math.random() * 11); // от 10 до 20 человек в группе
+        demo.push({ id: `slot_g${g}_lead`, group: String(g), position: '' }); // ответственный
+        for (let p = 1; p < size; p++) {
+            demo.push({ id: `slot_g${g}_${p}`, group: String(g), position: String(p) });
+        }
+    }
+    groupRoster = demo;
+    renderRoster();
+    const ok = await saveData({ groupRoster });
+    if (ok) showToast(`Демо-состав загружен: ${demo.length} мест в 10 группах`, 'success');
+}
+
+async function copyGroupRoster(group) {
+    const items = groupRoster.filter(r => String(r.group) === String(group));
+    const lines = [`Группа №${group}`, ...items.map(p => p.position === '' ? 'Ответственный' : `Место №${p.position}`)];
+    try { await navigator.clipboard.writeText(lines.join('\n')); showToast('Скопировано', 'success'); }
+    catch (e) { window.prompt('Скопируйте вручную:', lines.join('\n')); }
+}
+async function copyWholeRoster() {
+    const sections = [];
+    groupRoster.forEach(p => {
+        const last = sections[sections.length - 1];
+        if (last && String(last.group) === String(p.group)) last.items.push(p);
+        else sections.push({ group: p.group, items: [p] });
+    });
+    const text = sections.map(sec => [`Группа №${sec.group}`, ...sec.items.map(p => p.position === '' ? 'Ответственный' : `Место №${p.position}`)].join('\n')).join('\n\n');
+    try { await navigator.clipboard.writeText(text); showToast('Скопировано', 'success'); }
+    catch (e) { window.prompt('Скопируйте вручную:', text); }
+}
+
+/* ==================== УТИЛИТЫ ДАТ ==================== */
+function getNextWeekday(targetDow, fromDate) {
+    const d = new Date(fromDate || Date.now());
+    d.setHours(12, 0, 0, 0);
+    const diff = (targetDow - d.getDay() + 7) % 7;
+    d.setDate(d.getDate() + (diff === 0 ? 7 : diff));
+    return d.toISOString().slice(0, 10);
+}
+function formatDateRu(dateStr) {
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+function sortedDateKeys(dict) { return Object.keys(dict).sort(); }
+
+function emptyPerson() { return { group: '', position: '' }; }
+
+/* ==================== ПОЛЯ "ГРУППА + № В ГРУППЕ" (везде одинаково) ==================== */
+// value: {group, position}. groupCall/positionCall — строки с готовым вызовом
+// JS-функции для onchange (подставляются как есть в атрибут).
+function personFieldsHtml(value, groupCall, positionCall, editable) {
+    const p = value || emptyPerson();
+    if (!editable) {
+        if (!p.group && (p.position === '' || p.position === undefined)) return '<span class="text-slate-300">—</span>';
+        return `<span class="font-semibold text-violet-700">Гр.${escapeAttr(p.group) || '?'}${p.position !== '' && p.position !== undefined ? '.' + escapeAttr(p.position) : ''}</span>`;
+    }
+    return `<span class="inline-flex items-center gap-1">
+        <input type="text" value="${escapeAttr(p.group)}" placeholder="Гр" onchange="${groupCall}" class="w-11 border border-slate-300 rounded px-1 py-1 text-[11px] text-center" title="Номер группы">
+        <span class="text-slate-300 text-[10px]">·</span>
+        <input type="text" value="${p.position !== undefined ? escapeAttr(p.position) : ''}" placeholder="№" onchange="${positionCall}" class="w-11 border border-slate-300 rounded px-1 py-1 text-[11px] text-center" title="Номер в группе">
+    </span>`;
+}
+
+/* ==================== СВЯЗЬ "БУДНИ" <-> "УЧЕБНЫЕ" ==================== */
+// Правила: пункты №1 и №2 — никогда не учебные. Пункт №3 — всегда учебный.
+// Остальных учебных пунктов может не быть вовсе, но их МИНИМУМ 2 (значит,
+// сверх пункта №3 нужен хотя бы ещё один).
+function syncStudyItems(dateKey) {
+    const mw = midweekSchedule[dateKey];
+    if (!mw) return;
+    const study = studySchedule[dateKey] || { mainClass: { items: [] }, secondClass: { conductor: emptyPerson(), items: [] } };
+    if (!study.mainClass) study.mainClass = { items: [] };
+    if (!study.secondClass) study.secondClass = { conductor: emptyPerson(), items: [] };
+
+    (mw.items || []).forEach(i => {
+        if (i.number === 1 || i.number === 2) i.isStudy = false;
+        if (i.number === 3) i.isStudy = true;
+    });
+
+    // Единственный источник истины — отметки isStudy в самой таблице "Будни".
+    // Раньше сюда же подмешивался набор номеров, УЖЕ имеющихся в
+    // studySchedule — из-за этого удалённый здесь пункт тут же "подсасывался"
+    // обратно на следующей синхронизации. Теперь studySchedule только
+    // ПОДСТРАИВАЕТСЯ под "Будни", никогда не наоборот.
+    const studyNums = (mw.items || []).filter(i => i.isStudy).map(i => i.number).sort((a, b) => a - b);
+
+    ['mainClass', 'secondClass'].forEach(cls => {
+        const oldItems = study[cls].items || [];
+        study[cls].items = studyNums.map((num, idx) => {
+            const existing = oldItems.find(i => i.number === num);
+            return existing || { number: num, type: idx === 0 ? 'reading' : 'demo', participant: emptyPerson(), partner: emptyPerson() };
+        });
+    });
+
+    midweekSchedule[dateKey] = mw;
+    studySchedule[dateKey] = study;
+}
+
+function countStudyItems(dateKey) {
+    const mw = midweekSchedule[dateKey];
+    return mw ? (mw.items || []).filter(i => i.isStudy).length : 0;
+}
+
+let midweekSaveTimeout = null;
+function scheduleMidweekSave() {
+    if (midweekSaveTimeout) clearTimeout(midweekSaveTimeout);
+    midweekSaveTimeout = setTimeout(async () => {
+        const payload = {};
+        payload[activeMidweekSource === 'live' ? 'midweekSchedule' : 'midweekDraft'] = midweekSchedule;
+        payload[activeMidweekSource === 'live' ? 'studySchedule' : 'studyDraft'] = studySchedule;
+        await saveData(payload);
+    }, 1500);
+}
+let studySaveTimeout = null;
+function scheduleStudySave() {
+    if (studySaveTimeout) clearTimeout(studySaveTimeout);
+    studySaveTimeout = setTimeout(async () => {
+        const payload = {};
+        payload[activeMidweekSource === 'live' ? 'midweekSchedule' : 'midweekDraft'] = midweekSchedule;
+        payload[activeMidweekSource === 'live' ? 'studySchedule' : 'studyDraft'] = studySchedule;
+        await saveData(payload);
+    }, 1500);
+}
+let weekendSaveTimeout = null;
+function scheduleWeekendSave() {
+    if (weekendSaveTimeout) clearTimeout(weekendSaveTimeout);
+    weekendSaveTimeout = setTimeout(async () => {
+        const payload = {};
+        payload[activeWeekendSource === 'live' ? 'weekendSchedule' : 'weekendDraft'] = weekendSchedule;
+        await saveData(payload);
+    }, 1500);
+}
+let vpsSaveTimeout = null;
+function scheduleVpsSave() {
+    if (vpsSaveTimeout) clearTimeout(vpsSaveTimeout);
+    vpsSaveTimeout = setTimeout(async () => {
+        const payload = {};
+        payload[activeVpsSource === 'live' ? 'vpsSchedule' : 'vpsDraft'] = vpsSchedule;
+        await saveData(payload);
+    }, 1500);
+}
+
+/* ==================== ТАБЛИЦА 1: БУДНИ (СРЕДА) ==================== */
+function addMidweekWeek() {
+    const keys = sortedDateKeys(midweekSchedule);
+    const lastDate = keys.length ? keys[keys.length - 1] : null;
+    const nextKey = getNextWeekday(3, lastDate ? new Date(lastDate + 'T12:00:00').getTime() + 86400000 : Date.now());
+    if (midweekSchedule[nextKey]) { showToast('Эта среда уже добавлена', 'info'); return; }
+    midweekSchedule[nextKey] = {
+        chairman: emptyPerson(), closingPrayer: emptyPerson(), lastItemReader: emptyPerson(),
+        items: [
+            { number: 1, isStudy: false, participant: emptyPerson() },
+            { number: 2, isStudy: false, participant: emptyPerson() },
+            { number: 3, isStudy: true, participant: emptyPerson() },
+        ]
+    };
+    syncStudyItems(nextKey);
+    renderMidweek();
+    scheduleMidweekSave();
+}
+function removeMidweekWeek(dateKey) {
+    if (activeMidweekSource === 'draft') {
+        if (!confirm(`Удалить ${formatDateRu(dateKey)} из черновика (из обеих таблиц)? Это сразу навсегда, для черновика корзины нет.`)) return;
+        delete midweekSchedule[dateKey];
+        delete studySchedule[dateKey];
+        renderMidweek();
+        scheduleMidweekSave();
+        return;
+    }
+    if (!confirm(`Перенести расписание на ${formatDateRu(dateKey)} в корзину (из обеих таблиц)? Позже можно будет восстановить.`)) return;
+    midweekTrash[dateKey] = midweekSchedule[dateKey];
+    if (studySchedule[dateKey]) studyTrash[dateKey] = studySchedule[dateKey];
+    delete midweekSchedule[dateKey];
+    delete studySchedule[dateKey];
+    renderMidweek();
+    saveData({ midweekSchedule, studySchedule, midweekTrash, studyTrash });
+}
+function restoreMidweekWeek(dateKey) {
+    if (midweekLive[dateKey]) { alert('На эту дату уже есть действующее расписание — сначала удалите его или выберите другую запись.'); return; }
+    midweekLive[dateKey] = midweekTrash[dateKey];
+    delete midweekTrash[dateKey];
+    if (studyTrash[dateKey]) { studyLive[dateKey] = studyTrash[dateKey]; delete studyTrash[dateKey]; }
+
+    // syncStudyItems работает через активный указатель — временно переключаемся
+    // на "основной", чтобы синхронизация применилась к восстановленным данным,
+    // а не к черновику (если сейчас открыт он).
+    const prevSource = activeMidweekSource;
+    activeMidweekSource = 'live';
+    refreshActivePointers();
+    syncStudyItems(dateKey);
+    midweekLive = midweekSchedule; studyLive = studySchedule;
+    activeMidweekSource = prevSource;
+    refreshActivePointers();
+
+    if (prevSource === 'live') renderMidweek();
+    renderTrashModal();
+    saveData({ midweekSchedule: midweekLive, studySchedule: studyLive, midweekTrash, studyTrash });
+    showToast('Расписание восстановлено', 'success');
+}
+function permanentlyDeleteMidweekWeek(dateKey) {
+    if (!confirm('Удалить безвозвратно? Отменить это действие будет нельзя.')) return;
+    delete midweekTrash[dateKey];
+    delete studyTrash[dateKey];
+    renderTrashModal();
+    saveData({ midweekTrash, studyTrash });
+}
+function addMidweekItem(dateKey) {
+    const mw = midweekSchedule[dateKey];
+    if (mw.items.length >= 12) { alert('Максимум 12 пунктов.'); return; }
+    const nextNum = mw.items.length ? Math.max(...mw.items.map(i => i.number)) + 1 : 1;
+    mw.items.push({ number: nextNum, isStudy: false, participant: emptyPerson() });
+    renderMidweek();
+    scheduleMidweekSave();
+}
+function removeMidweekItem(dateKey, number) {
+    if (number === 3) { alert('Пункт №3 — всегда учебный по правилам, удалить его нельзя (можно удалить только более поздние пункты).'); return; }
+    if (!confirm(`Удалить пункт №${number}? Это уберёт его из обеих таблиц — «Будни» и «Учебные».`)) return;
+    const mw = midweekSchedule[dateKey];
+    mw.items = mw.items.filter(i => i.number !== number);
+    syncStudyItems(dateKey);
+    renderMidweek();
+    renderStudy();
+    scheduleMidweekSave();
+}
+function updateMidweekField(dateKey, field, value) {
+    midweekSchedule[dateKey][field] = value;
+    scheduleMidweekSave();
+}
+function updateMidweekPersonField(dateKey, field, subfield, value) {
+    const week = midweekSchedule[dateKey];
+    if (!week[field] || typeof week[field] !== 'object') week[field] = emptyPerson();
+    week[field][subfield] = value;
+    scheduleMidweekSave();
+}
+function toggleMidweekItemStudy(dateKey, number, checked) {
+    if (number === 1 || number === 2) { alert('Пункты №1 и №2 никогда не бывают учебными.'); renderMidweek(); return; }
+    if (number === 3 && !checked) { alert('Пункт №3 всегда учебный, снять эту отметку нельзя.'); renderMidweek(); return; }
+    if (!checked) {
+        const currentCount = countStudyItems(dateKey);
+        if (currentCount - 1 < 2) { alert('Учебных пунктов должно быть минимум 2 — нельзя снять отметку.'); renderMidweek(); return; }
+    }
+    const item = midweekSchedule[dateKey].items.find(i => i.number === number);
+    if (!item) return;
+    item.isStudy = checked;
+    syncStudyItems(dateKey);
+    renderMidweek();
+    scheduleMidweekSave();
+}
+
+function updateMidweekItemPersonField(dateKey, number, subfield, value) {
+    const item = midweekSchedule[dateKey].items.find(i => i.number === number);
+    if (!item) return;
+    if (!item.participant || typeof item.participant !== 'object') item.participant = emptyPerson();
+    item.participant[subfield] = value;
+    scheduleMidweekSave();
+}
+
+function renderMidweek() {
+    const editable = isAdminRole();
+    const container = document.getElementById('midweek-container');
+    const keys = sortedDateKeys(midweekSchedule);
+    if (keys.length === 0) { container.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs bg-white border border-slate-200 rounded-xl">Расписание пока пусто</div>`; return; }
+
+    container.innerHTML = keys.map(dateKey => {
+        const week = midweekSchedule[dateKey];
+        const items = [...week.items].sort((a, b) => a.number - b.number);
+        const lastItem = items[items.length - 1];
+        const wKey = 'midweek:' + dateKey;
+        const isOpen = openScheduleWeeks.has(wKey);
+        return `
+        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <button onclick="toggleScheduleWeek('${wKey}')" class="w-full flex justify-between items-center bg-violet-50 px-3 py-2 text-left">
+                <span class="font-bold text-xs text-violet-800 flex items-center gap-1.5">
+                    <i class="fa-solid fa-chevron-${isOpen ? 'down' : 'right'} text-[10px] text-violet-400"></i>
+                    📅 Среда, ${formatDateRu(dateKey)}
+                </span>
+                ${editable ? `<span onclick="event.stopPropagation(); removeMidweekWeek('${dateKey}')" class="text-rose-500 text-xs"><i class="fa-solid fa-trash-can"></i></span>` : ''}
+            </button>
+            ${isOpen ? `
+            <div class="p-3 space-y-2">
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="font-bold text-slate-500 w-28 shrink-0">Председатель:</span>
+                    ${personFieldsHtml(week.chairman, `updateMidweekPersonField('${dateKey}','chairman','group',this.value)`, `updateMidweekPersonField('${dateKey}','chairman','position',this.value)`, editable)}
+                </div>
+                <div class="space-y-2 mt-2">
+                    ${items.map(item => {
+                        const locked = item.number === 1 || item.number === 2 || item.number === 3;
+                        const isLast = item === lastItem;
+                        return `
+                        <div class="border border-slate-200 rounded-lg p-2.5 ${item.isStudy ? 'bg-amber-50' : ''}">
+                            <div class="flex items-center justify-between gap-2 mb-1.5">
+                                <span class="font-bold text-violet-700 text-sm">№${item.number} ${item.isStudy ? '🎓' : ''}</span>
+                                <div class="flex items-center gap-2">
+                                    ${editable ? `
+                                    <label class="flex items-center gap-1 text-[11px] text-slate-500">
+                                        <input type="checkbox" ${item.isStudy ? 'checked' : ''} ${locked ? 'disabled' : ''} onchange="toggleMidweekItemStudy('${dateKey}',${item.number},this.checked)" class="${locked ? 'opacity-50' : ''}">
+                                        Учебный
+                                    </label>` : ''}
+                                    ${editable && item.number > 3 ? `<button onclick="removeMidweekItem('${dateKey}',${item.number})" class="text-rose-400 hover:text-rose-600 p-1.5 -m-1.5"><i class="fa-solid fa-xmark"></i></button>` : ''}
+                                </div>
+                            </div>
+                            ${item.isStudy ? (() => {
+                            const studyItem = (studySchedule[dateKey] && studySchedule[dateKey].mainClass && studySchedule[dateKey].mainClass.items || []).find(i => i.number === item.number);
+                            return `
+                            <div class="flex items-center gap-2 text-[11px]">
+                                <span class="font-bold text-slate-500 w-16 shrink-0">Участник:</span>
+                                ${personFieldsHtml(studyItem ? studyItem.participant : null, '', '', false)}
+                                <span class="text-slate-400 italic">(правки во вкладке «Учебные»)</span>
+                            </div>
+                            ${studyItem && studyItem.type === 'demo' ? `
+                            <div class="flex items-center gap-2 text-[11px] mt-1">
+                                <span class="font-bold text-slate-500 w-16 shrink-0">Напарник:</span>
+                                ${personFieldsHtml(studyItem.partner, '', '', false)}
+                            </div>` : ''}`;
+                        })() : `
+                            <div class="flex items-center gap-2 text-[11px]">
+                                <span class="font-bold text-slate-500 w-16 shrink-0">Участник:</span>
+                                ${personFieldsHtml(item.participant, `updateMidweekItemPersonField('${dateKey}',${item.number},'group',this.value)`, `updateMidweekItemPersonField('${dateKey}',${item.number},'position',this.value)`, editable)}
+                            </div>`}
+                            ${isLast ? `
+                            <div class="flex items-center gap-2 text-[11px] mt-1.5">
+                                <span class="font-bold text-slate-500 w-16 shrink-0">Чтец:</span>
+                                ${personFieldsHtml(week.lastItemReader, `updateMidweekPersonField('${dateKey}','lastItemReader','group',this.value)`, `updateMidweekPersonField('${dateKey}','lastItemReader','position',this.value)`, editable)}
+                            </div>` : ''}
+                        </div>
+                        `; }).join('')}
+                </div>
+                ${editable ? `<p class="text-[10px] text-slate-400">Пункты №1–2 никогда не учебные, №3 — всегда учебный, учебных минимум 2 всего. У последнего пункта (Изучение Библии собранием) поле «Чтец» доступно всегда, независимо от отметки «Учебный».</p>
+                <button onclick="addMidweekItem('${dateKey}')" class="text-[11px] text-violet-600 font-semibold mt-1"><i class="fa-solid fa-plus mr-1"></i>Добавить пункт</button>` : ''}
+                <div class="flex items-center gap-2 text-xs pt-2 border-t border-slate-100 mt-2">
+                    <span class="font-bold text-slate-500 w-28 shrink-0">Молитва (в конце):</span>
+                    ${personFieldsHtml(week.closingPrayer, `updateMidweekPersonField('${dateKey}','closingPrayer','group',this.value)`, `updateMidweekPersonField('${dateKey}','closingPrayer','position',this.value)`, editable)}
+                </div>
+            </div>` : ''}
+        </div>`;
+    }).join('');
+}
+
+function toggleScheduleWeek(key) {
+    if (openScheduleWeeks.has(key)) openScheduleWeeks.delete(key);
+    else openScheduleWeeks.add(key);
+    if (key.startsWith('midweek:')) renderMidweek();
+    else if (key.startsWith('study:')) renderStudy();
+    else if (key.startsWith('weekend:')) renderWeekend();
+}
+
+/* ==================== ТАБЛИЦА 2: УЧЕБНЫЕ ЗАДАНИЯ ==================== */
+function addStudyItemDirect(dateKey) {
+    if (!midweekSchedule[dateKey]) { alert('Сначала добавьте эту среду во вкладке «Будни».'); return; }
+    const mw = midweekSchedule[dateKey];
+    if (mw.items.length >= 12) { alert('В расписании уже максимум 12 пунктов.'); return; }
+    const nextNum = mw.items.length ? Math.max(...mw.items.map(i => i.number)) + 1 : 4;
+    mw.items.push({ number: nextNum, isStudy: true, participant: emptyPerson() });
+    syncStudyItems(dateKey);
+    renderStudy();
+    scheduleStudySave();
+}
+function updateStudyItemField(dateKey, cls, number, field, value) {
+    const item = studySchedule[dateKey][cls].items.find(i => i.number === number);
+    if (!item) return;
+    item[field] = value;
+    renderStudy();
+    scheduleStudySave();
+}
+function updateStudyPersonField(dateKey, cls, number, field, subfield, value) {
+    const item = studySchedule[dateKey][cls].items.find(i => i.number === number);
+    if (!item) return;
+    if (!item[field] || typeof item[field] !== 'object') item[field] = emptyPerson();
+    item[field][subfield] = value;
+    scheduleStudySave();
+}
+function updateStudySecondConductor(dateKey, subfield, value) {
+    if (!studySchedule[dateKey].secondClass.conductor) studySchedule[dateKey].secondClass.conductor = emptyPerson();
+    studySchedule[dateKey].secondClass.conductor[subfield] = value;
+    scheduleStudySave();
+}
+
+function renderStudy() {
+    const editable = isAdminRole();
+    const cls = activeStudyClass;
+    const container = document.getElementById('study-container');
+    const badge = document.getElementById('study-source-badge');
+    if (badge) badge.textContent = editable ? (activeMidweekSource === 'draft' ? '📝 Показан черновик (переключается во вкладке «Будни»)' : '✅ Показан основной') : '';
+    sortedDateKeys(midweekSchedule).forEach(k => syncStudyItems(k));
+    const keys = sortedDateKeys(midweekSchedule).filter(k => midweekSchedule[k].items.some(i => i.isStudy));
+
+    if (keys.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs bg-white border border-slate-200 rounded-xl">Учебных пунктов пока нет — добавьте среду во вкладке «Будни» (пункт №3 станет учебным автоматически).</div>`;
+        return;
+    }
+
+    container.innerHTML = keys.map(dateKey => {
+        const week = studySchedule[dateKey][cls];
+        const wKey = 'study:' + cls + ':' + dateKey;
+        const isOpen = openScheduleWeeks.has(wKey);
+        return `
+        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <button onclick="toggleScheduleWeek('${wKey}')" class="w-full flex justify-between items-center bg-amber-50 px-3 py-2 text-left">
+                <span class="font-bold text-xs text-amber-800 flex items-center gap-1.5">
+                    <i class="fa-solid fa-chevron-${isOpen ? 'down' : 'right'} text-[10px] text-amber-500"></i>
+                    🎓 Среда, ${formatDateRu(dateKey)}
+                </span>
+            </button>
+            ${isOpen ? `
+            <div class="p-3 space-y-2">
+                ${cls === 'secondClass' ? `
+                <div class="flex items-center gap-2 text-xs pb-2 border-b border-slate-100 mb-2">
+                    <span class="font-bold text-slate-500 w-32 shrink-0">Ведущий 2-го класса:</span>
+                    ${personFieldsHtml(studySchedule[dateKey].secondClass.conductor, `updateStudySecondConductor('${dateKey}','group',this.value)`, `updateStudySecondConductor('${dateKey}','position',this.value)`, editable)}
+                </div>` : ''}
+                <div class="space-y-2">
+                    ${(week.items || []).map((item, idx) => `
+                    <div class="border border-slate-200 rounded-lg p-2.5 ${idx === 0 ? 'bg-slate-50' : ''}">
+                        <div class="flex items-center justify-between gap-2 mb-1.5">
+                            <span class="font-bold text-violet-700 text-sm">№${item.number}</span>
+                            <div class="flex items-center gap-2 flex-1 ml-2">
+                                ${idx === 0 ? `<span class="text-[11px] font-semibold text-slate-600">📖 Учебное чтение</span>` :
+                                    (editable ? `
+                                    <select onchange="updateStudyItemField('${dateKey}','${cls}',${item.number},'type',this.value)" class="border border-slate-300 rounded px-1.5 py-1 text-[11px] flex-1">
+                                        <option value="demo" ${item.type === 'demo' ? 'selected' : ''}>🎭 Демонстрация</option>
+                                        <option value="talk" ${item.type === 'talk' ? 'selected' : ''}>🗣️ Речь</option>
+                                    </select>` : `<span class="text-[11px]">${item.type === 'talk' ? '🗣️ Речь' : '🎭 Демонстрация'}</span>`)}
+                            </div>
+                            ${editable && cls === 'mainClass' && item.number > 3 ? `<button onclick="removeMidweekItem('${dateKey}',${item.number})" class="text-rose-400 hover:text-rose-600 shrink-0 p-1.5 -m-1.5" title="Удалить пункт"><i class="fa-solid fa-trash-can text-xs"></i></button>` : ''}
+                        </div>
+                        <div class="flex items-center gap-2 text-[11px]">
+                            <span class="font-bold text-slate-500 w-16 shrink-0">Участник:</span>
+                            ${personFieldsHtml(item.participant, `updateStudyPersonField('${dateKey}','${cls}',${item.number},'participant','group',this.value)`, `updateStudyPersonField('${dateKey}','${cls}',${item.number},'participant','position',this.value)`, editable)}
+                        </div>
+                        ${idx !== 0 && item.type === 'demo' ? `
+                        <div class="flex items-center gap-2 text-[11px] mt-1.5">
+                            <span class="font-bold text-slate-500 w-16 shrink-0">Напарник:</span>
+                            ${personFieldsHtml(item.partner, `updateStudyPersonField('${dateKey}','${cls}',${item.number},'partner','group',this.value)`, `updateStudyPersonField('${dateKey}','${cls}',${item.number},'partner','position',this.value)`, editable)}
+                        </div>` : ''}
+                    </div>
+                    `).join('')}
+                </div>
+                ${editable && cls === 'mainClass' ? `<button onclick="addStudyItemDirect('${dateKey}')" class="text-[11px] text-violet-600 font-semibold mt-1"><i class="fa-solid fa-plus mr-1"></i>Добавить пункт</button>` : ''}
+            </div>` : ''}
+        </div>`;
+    }).join('');
+}
+
+/* ==================== ТАБЛИЦА 3: ВЫХОДНЫЕ ==================== */
+function addWeekendWeek() {
+    const keys = sortedDateKeys(weekendSchedule);
+    const lastDate = keys.length ? keys[keys.length - 1] : null;
+    const nextKey = getNextWeekday(6, lastDate ? new Date(lastDate + 'T12:00:00').getTime() + 86400000 : Date.now());
+    if (weekendSchedule[nextKey]) { showToast('Эта суббота уже добавлена', 'info'); return; }
+    weekendSchedule[nextKey] = {
+        chairman: emptyPerson(), openingPrayer: emptyPerson(), talkTitle: '', songNumber: '', songTitle: '',
+        watchtowerConductor: { group: '7', position: '' }, watchtowerReader: emptyPerson(), closingPrayer: emptyPerson()
+    };
+    renderWeekend();
+    scheduleWeekendSave();
+}
+function removeWeekendWeek(dateKey) {
+    if (activeWeekendSource === 'draft') {
+        if (!confirm(`Удалить ${formatDateRu(dateKey)} из черновика? Это сразу навсегда.`)) return;
+        delete weekendSchedule[dateKey];
+        renderWeekend();
+        scheduleWeekendSave();
+        return;
+    }
+    if (!confirm(`Перенести расписание выходных на ${formatDateRu(dateKey)} в корзину? Позже можно будет восстановить.`)) return;
+    weekendTrash[dateKey] = weekendSchedule[dateKey];
+    delete weekendSchedule[dateKey];
+    renderWeekend();
+    saveData({ weekendSchedule, weekendTrash });
+}
+function restoreWeekendWeek(dateKey) {
+    if (weekendLive[dateKey]) { alert('На эту дату уже есть действующее расписание — сначала удалите его или выберите другую запись.'); return; }
+    weekendLive[dateKey] = weekendTrash[dateKey];
+    delete weekendTrash[dateKey];
+    refreshActivePointers();
+    if (activeWeekendSource === 'live') renderWeekend();
+    renderTrashModal();
+    saveData({ weekendSchedule: weekendLive, weekendTrash });
+    showToast('Расписание восстановлено', 'success');
+}
+function permanentlyDeleteWeekendWeek(dateKey) {
+    if (!confirm('Удалить безвозвратно? Отменить это действие будет нельзя.')) return;
+    delete weekendTrash[dateKey];
+    renderTrashModal();
+    saveData({ weekendTrash });
+}
+function updateWeekendField(dateKey, field, value) {
+    weekendSchedule[dateKey][field] = value;
+    scheduleWeekendSave();
+}
+function updateWeekendPersonField(dateKey, field, subfield, value) {
+    const week = weekendSchedule[dateKey];
+    if (!week[field] || typeof week[field] !== 'object') week[field] = emptyPerson();
+
+    // Молитву в начале обычно произносит тот же, кто председательствует —
+    // подставляем её автоматически вслед за председателем. Синхронизация
+    // продолжается, пока молитва пустая ИЛИ совпадает с текущим
+    // председателем (то есть не была вручную изменена на кого-то другого).
+    const prayer = week.openingPrayer || emptyPerson();
+    const wasAutoSynced = field === 'chairman' &&
+        ((!prayer.group && !prayer.position) || (prayer.group === week.chairman.group && prayer.position === week.chairman.position));
+
+    week[field][subfield] = value;
+
+    if (wasAutoSynced) {
+        week.openingPrayer = { ...week.chairman };
+        renderWeekend();
+    }
+
+    scheduleWeekendSave();
+}
+
+function renderWeekend() {
+    const editable = isAdminRole();
+    const container = document.getElementById('weekend-container');
+    const keys = sortedDateKeys(weekendSchedule);
+    if (keys.length === 0) { container.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs bg-white border border-slate-200 rounded-xl">Расписание пока пусто</div>`; return; }
+
+    function personRow(field, label, week, dateKey) {
+        return `
+        <div class="border-b border-slate-100 pb-2">
+            <span class="block font-bold text-slate-500 text-[11px] mb-1">${label}</span>
+            ${personFieldsHtml(week[field], `updateWeekendPersonField('${dateKey}','${field}','group',this.value)`, `updateWeekendPersonField('${dateKey}','${field}','position',this.value)`, editable)}
+        </div>`;
+    }
+    function textRow(field, label, week, dateKey, type) {
+        return `
+        <div class="border-b border-slate-100 pb-2">
+            <span class="block font-bold text-slate-500 text-[11px] mb-1">${label}</span>
+            ${editable ? `<input type="${type || 'text'}" value="${escapeAttr(week[field])}" onchange="updateWeekendField('${dateKey}','${field}',this.value)" class="w-full border border-slate-300 rounded px-2 py-1 text-xs box-border">` : `<span class="font-semibold text-xs">${escapeAttr(week[field]) || '—'}</span>`}
+        </div>`;
+    }
+
+    container.innerHTML = keys.map(dateKey => {
+        const week = weekendSchedule[dateKey];
+        const wKey = 'weekend:' + dateKey;
+        const isOpen = openScheduleWeeks.has(wKey);
+        return `
+        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <button onclick="toggleScheduleWeek('${wKey}')" class="w-full flex justify-between items-center bg-violet-50 px-3 py-2 text-left">
+                <span class="font-bold text-xs text-violet-800 flex items-center gap-1.5">
+                    <i class="fa-solid fa-chevron-${isOpen ? 'down' : 'right'} text-[10px] text-violet-400"></i>
+                    📖 Суббота, ${formatDateRu(dateKey)}
+                </span>
+                ${editable ? `<span onclick="event.stopPropagation(); removeWeekendWeek('${dateKey}')" class="text-rose-500 text-xs"><i class="fa-solid fa-trash-can"></i></span>` : ''}
+            </button>
+            ${isOpen ? `
+            <div class="p-3 space-y-2">
+                ${personRow('chairman', 'Председатель', week, dateKey)}
+                ${personRow('openingPrayer', 'Молитва (в начале)', week, dateKey)}
+                ${textRow('talkTitle', 'Название речи', week, dateKey)}
+                ${textRow('songNumber', 'Песня №', week, dateKey, 'number')}
+                ${textRow('songTitle', 'Название песни', week, dateKey)}
+                ${personRow('watchtowerConductor', 'Ведущий статьи', week, dateKey)}
+                ${personRow('watchtowerReader', 'Чтец статьи', week, dateKey)}
+                <div class="pb-1">
+                    <span class="block font-bold text-slate-500 text-[11px] mb-1">Заключительная молитва</span>
+                    ${personFieldsHtml(week.closingPrayer, `updateWeekendPersonField('${dateKey}','closingPrayer','group',this.value)`, `updateWeekendPersonField('${dateKey}','closingPrayer','position',this.value)`, editable)}
+                </div>
+            </div>` : ''}
+        </div>`;
+    }).join('');
+}
+
+/* ==================== ТАБЛИЦА 4: ВПС ==================== */
+function addVpsWeek() {
+    const keys = sortedDateKeys(vpsSchedule);
+    const lastDate = keys.length ? keys[keys.length - 1] : null;
+    const nextKey = getNextWeekday(0, lastDate ? new Date(lastDate + 'T12:00:00').getTime() + 86400000 : Date.now());
+    if (vpsSchedule[nextKey]) { showToast('Это воскресенье уже добавлено', 'info'); return; }
+    vpsSchedule[nextKey] = { conductor: emptyPerson() };
+    renderVps();
+    scheduleVpsSave();
+}
+function removeVpsWeek(dateKey) {
+    if (activeVpsSource === 'draft') {
+        if (!confirm(`Удалить ${formatDateRu(dateKey)} из черновика? Это сразу навсегда.`)) return;
+        delete vpsSchedule[dateKey];
+        renderVps();
+        scheduleVpsSave();
+        return;
+    }
+    if (!confirm(`Перенести запись на ${formatDateRu(dateKey)} в корзину? Позже можно будет восстановить.`)) return;
+    vpsTrash[dateKey] = vpsSchedule[dateKey];
+    delete vpsSchedule[dateKey];
+    renderVps();
+    saveData({ vpsSchedule, vpsTrash });
+}
+function restoreVpsWeek(dateKey) {
+    if (vpsLive[dateKey]) { alert('На эту дату уже есть действующая запись — сначала удалите её или выберите другую.'); return; }
+    vpsLive[dateKey] = vpsTrash[dateKey];
+    delete vpsTrash[dateKey];
+    refreshActivePointers();
+    if (activeVpsSource === 'live') renderVps();
+    renderTrashModal();
+    saveData({ vpsSchedule: vpsLive, vpsTrash });
+    showToast('Запись восстановлена', 'success');
+}
+function permanentlyDeleteVpsWeek(dateKey) {
+    if (!confirm('Удалить безвозвратно? Отменить это действие будет нельзя.')) return;
+    delete vpsTrash[dateKey];
+    renderTrashModal();
+    saveData({ vpsTrash });
+}
+function updateVpsField(dateKey, subfield, value) {
+    if (!vpsSchedule[dateKey].conductor) vpsSchedule[dateKey].conductor = emptyPerson();
+    vpsSchedule[dateKey].conductor[subfield] = value;
+    scheduleVpsSave();
+}
+
+function renderVps() {
+    const editable = isAdminRole();
+    const container = document.getElementById('vps-container');
+    const keys = sortedDateKeys(vpsSchedule);
+    if (keys.length === 0) { container.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs bg-white border border-slate-200 rounded-xl">Расписание пока пусто</div>`; return; }
+
+    container.innerHTML = `
+    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <table class="w-full text-xs border-collapse">
+            <thead><tr class="bg-slate-50 text-slate-500 uppercase text-[10px]">
+                <th class="p-2 text-left">Воскресенье</th>
+                <th class="p-2 text-left">Ведущий</th>
+                ${editable ? '<th class="p-2 w-8"></th>' : ''}
+            </tr></thead>
+            <tbody>
+                ${keys.map(dateKey => `
+                <tr class="border-t border-slate-100">
+                    <td class="p-2 font-semibold text-slate-700">${formatDateRu(dateKey)}</td>
+                    <td class="p-2">${personFieldsHtml(vpsSchedule[dateKey].conductor, `updateVpsField('${dateKey}','group',this.value)`, `updateVpsField('${dateKey}','position',this.value)`, editable)}</td>
+                    ${editable ? `<td class="p-2"><button onclick="removeVpsWeek('${dateKey}')" class="text-rose-400"><i class="fa-solid fa-trash-can"></i></button></td>` : ''}
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>`;
+}
+/* ==================== АККАУНТЫ (супер-админ) ==================== */
+function openUsersModal() { renderUsersTable(); document.getElementById('users-modal').classList.remove('hidden'); }
+function closeUsersModal() { document.getElementById('users-modal').classList.add('hidden'); }
+
+function renderUsersTable() {
+    const tbody = document.getElementById('users-tbody');
+    if (cloudUsers.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-400">Пока никто не зарегистрирован</td></tr>`; return; }
+    tbody.innerHTML = cloudUsers.map((u, idx) => `
+        <tr class="border-b border-slate-100">
+            <td class="p-2 font-semibold text-slate-800">${escapeAttr(u.email)}</td>
+            <td class="p-2 text-center">
+                <select onchange="updateUserField(${idx}, 'group', this.value)" class="border border-slate-300 rounded px-1 py-0.5 text-xs">
+                    ${Array.from({length: TOTAL_GROUPS}, (_, i) => i + 1).map(n => `<option value="${n}" ${String(u.group) === String(n) ? 'selected' : ''}>№${n}</option>`).join('')}
+                </select>
+            </td>
+            <td class="p-2 text-center">
+                <select onchange="updateUserField(${idx}, 'role', this.value)" class="border border-slate-300 rounded px-1 py-0.5 text-xs">
+                    <option value="user" ${u.role === 'user' ? 'selected' : ''}>Пользователь</option>
+                    <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Администратор</option>
+                    <option value="superadmin" ${u.role === 'superadmin' ? 'selected' : ''}>Главный Админ</option>
+                </select>
+            </td>
+            <td class="p-2 text-center">
+                ${u.approved
+                    ? `<button onclick="toggleApproval(${idx})" class="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">✅ Одобрен</button>`
+                    : `<button onclick="toggleApproval(${idx})" class="text-[10px] font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700 animate-pulse">⏳ Одобрить</button>`}
+            </td>
+            <td class="p-2 text-center">
+                ${u.email !== currentUser.email ? `<button onclick="deleteUserAcc(${idx})" class="text-rose-600 p-1"><i class="fa-solid fa-user-xmark"></i></button>` : '<span class="text-slate-400 text-[10px]">(Вы)</span>'}
+            </td>
+        </tr>
+    `).join('');
+}
+async function updateUserField(idx, field, value) { cloudUsers[idx][field] = value; await saveData({ users: cloudUsers }); renderUsersTable(); }
+async function toggleApproval(idx) { cloudUsers[idx].approved = !cloudUsers[idx].approved; await saveData({ users: cloudUsers }); renderUsersTable(); showToast('Обновлено', 'success'); }
+async function deleteUserAcc(idx) { if (!confirm('Удалить этот аккаунт?')) return; cloudUsers.splice(idx, 1); await saveData({ users: cloudUsers }); renderUsersTable(); showToast('Удалено', 'success'); }
+
+/* ==================== ЗАПУСК ==================== */
+document.addEventListener('DOMContentLoaded', async () => {
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+    }
+    if (authToken && currentUser) {
+        await enterApp();
+    } else {
+        document.getElementById('login-view').classList.remove('hidden');
+        populateGroupSelectors();
+    }
+});
+</script>
+</body>
+</html>
